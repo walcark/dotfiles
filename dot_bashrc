@@ -239,6 +239,9 @@ export PYTHONPATH=${PROJ_PATH}/mylab/src:$PYTHONPATH
 export PYTHONPATH=${PROJ_PATH}/sampopti/src:$PYTHONPATH
 
 
+eval "$(starship init bash)"
+
+
 ####################################################################################
 # Lancement ssh-agent
 ####################################################################################
