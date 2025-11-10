@@ -19,7 +19,7 @@ export HISTSIZE=1000
 export HISTFILESIZE=${HISTSIZE}
 export HISTCONTROL=ignoreboth
 export EDITOR=vim
-
+export STARSHIP_CONFIG=~/.config/starship.toml
 
 #=======================================================================#
 #                        Dynamic shell evaluation                       #
