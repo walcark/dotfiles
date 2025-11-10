@@ -1,0 +1,5 @@
+# GITHUB
+Host github.com
+    HostName github.com
+    PreferredAuthentifications publickey
+    IdentityFile ~/.ssh/github_key
