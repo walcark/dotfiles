@@ -4,35 +4,35 @@ case $- in
       *) return;;
 esac
 
-#=========================================#
-#                 Options                 #
-#=========================================#
+#=======================================================================#
+#                                 Options                               #
+#=======================================================================#
 shopt -s histappend
 shopt -s cdspell
 shopt -s checkwinsize
 
 
-#=========================================#
-#          Environment variables          #
-#=========================================#
+#=======================================================================#
+#                          Environment variables                        #
+#=======================================================================#
 export HISTSIZE=1000
 export HISTFILESIZE=${HISTSIZE}
 export HISTCONTROL=ignoreboth
 export EDITOR=vim
 
 
-#=========================================#
-#         Dynamic shell evaluation        #
-#=========================================#
+#=======================================================================#
+#                        Dynamic shell evaluation                       #
+#=======================================================================#
 
 # evaluate starship
-if [ -x "$(command -v sharship)" ]; then
+if [ -x "$(command -v starship)" ]; then
     eval "$(starship init bash)"
 fi
 
 
 # less more friendly for non-text input files
-if [-x usr/bin/lesspipe ]; then
+if [ -x usr/bin/lesspipe ]; then
     eval "$(SHELL=/bin/sh lesspipe)"
 fi
 
@@ -92,48 +92,6 @@ trex() {
 	echo "Clipboard is now empty."
 }
 
-
-# 1) ALIASES
-# ----------------------------------------------------------------------------------
-
-# Navigation
-# ----------
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-alias ll='ls -lh --color=auto'
-alias la='ls -lAh --color=auto'
-alias ..='cd ..'
-alias ...='cd ../..'
-alias c='clear'
-alias h='history | tail -50'
-alias mkdir='mkdir -p'
-alias rm='rm -i'
-alias chezmoi='~/bin/chezmoi'
-
-# Git commands 
-# ------------
-alias gs='git status' 
-alias ga='git add' 
-alias gb='git branch'
-alias gc='git commit -m'
-alias gp='git push'
-alias gl='git pull'
-alias gco='git checkout'
-alias gcb='git checkout -b'
-alias grh='git reset --hard HEAD'
-alias gclone='source /home/kwalcarius/.clone_gitlab'
-
-# Navigation 
-# ----------
-alias data='cd /home/kwalcarius/data'
-alias code='code .'
-alias scpt='pass -c trex.cnes.fr && scp'
-alias para='cd ~/PARA'
-alias proj='cd ~/PARA/projects'
-alias arch='cd ~/PARA/archives'
-alias ress='cd ~/PARA/ressources'
-
 # 2) ENVIRONMENT VARIABLES
 # -------------------------
 export CUDA_HOME=/usr/local/cuda
@@ -145,16 +103,23 @@ export SMG_ABS_ROOT=${LIBS_PATH}/smartg
 export DATA_PATH=/home/kwalcarius/data
 export MOPSMAP_PATH=/home/kwalcarius/bin/mopsmap
 
-# 3) PYTHONPATH
-# -------------
-export PYTHONPATH=${LIBS_PATH}/DART/bin/python_scripts/DAO:$PYTHONPATH
-export PYTHONPATH=${LIBS_PATH}/adjeff/simulations:$PYTHONPATH
-export PYTHONPATH=${LIBS_PATH}/luts:$PYTHONPATH
-export PYTHONPATH=${LIBS_PATH}/smartg_pv:$PYTHONPATH
-export PYTHONPATH=${PROJ_PATH}/adjeffcorr/src:$PYTHONPATH
-export PYTHONPATH=${PROJ_PATH}/mylab/src:$PYTHONPATH
-export PYTHONPATH=${PROJ_PATH}/sampopti/src:$PYTHONPATH
 
+#=======================================================================#
+#                           Python environment                          #
+#=======================================================================#
+PYTHON_DIRS=(
+  "${LIBS_PATH}/DART/bin/python_scripts/DAO"
+  "${LIBS_PATH}/adjeff/simulations"
+  "${LIBS_PATH}/luts"
+  "${LIBS_PATH}/smartg_pv"
+  "${PROJ_PATH}/adjeffcorr/src"
+  "${PROJ_PATH}/mylab/src"
+  "${PROJ_PATH}/sampopti/src"
+)
+for d in "${PYTHON_DIRS[@]}"; do
+  [ -d "$d" ] && export PYTHONPATH="${d}:${PYTHONPATH}"
+done
+unset d
 
 ####################################################################################
 # Lancement ssh-agent
