@@ -35,3 +35,10 @@ alias para='cd ~/PARA'
 alias proj='cd ~/PARA/projects'
 alias arch='cd ~/PARA/archives'
 alias ress='cd ~/PARA/ressources'
+
+# Chezmoi
+# -------
+alias cm='chezmoi'
+alias cmcd='chezmoi cd'
+alias cme='chezmoi edit'
+alias cma='chezmoi add'
