@@ -20,6 +20,8 @@ export HISTFILESIZE=${HISTSIZE}
 export HISTCONTROL=ignoreboth
 export EDITOR=vim
 export STARSHIP_CONFIG=~/.config/starship.toml
+export WEZTERM_CONFIG_FILE=~/.config/wezterm.lua
+
 
 #=======================================================================#
 #                        Dynamic shell evaluation                       #
