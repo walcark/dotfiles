@@ -4,6 +4,10 @@ case $- in
       *) return;;
 esac
 
+# Initialize `~/.bashrc.d`
+[[ -s "${HOME}/.bashrc.d/.init.sh" ]] && source ${HOME}/.bashrc.d/.init.sh
+
+
 #=======================================================================#
 #                                 Options                               #
 #=======================================================================#
@@ -21,64 +25,6 @@ export HISTCONTROL=ignoreboth
 export EDITOR=vim
 export STARSHIP_CONFIG=~/.config/starship.toml
 export WEZTERM_CONFIG_FILE=~/.config/wezterm.lua
-
-
-#=======================================================================#
-#                        Dynamic shell evaluation                       #
-#=======================================================================#
-
-# evaluate starship
-if [ -x "$(command -v starship)" ]; then
-    eval "$(starship init bash)"
-fi
-
-
-# less more friendly for non-text input files
-if [ -x usr/bin/lesspipe ]; then
-    eval "$(SHELL=/bin/sh lesspipe)"
-fi
-
-# enable completion features
-if ! shopt -oq posix; then
-  if [ -f /usr/share/bash-completion/bash_completion ]; then
-    . /usr/share/bash-completion/bash_completion
-  elif [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-  fi
-fi
-
-# enable color support of ls + aliases
-if [ -x /usr/bin/dircolors ]; then
-    if [ -r ~/.dircolors ]; then
-        eval "$(dircolors -b ~/.dircolors)"
-    else
-        eval "$(dircolors -b)"
-    fi
-    alias ls='ls --color=auto'
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
-fi
-
-
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
-
-
-# Initialize conda
-__conda_setup="$('/home/kwalcarius/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/kwalcarius/miniconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/kwalcarius/miniconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/kwalcarius/miniconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-
 
 #=========================================#
 #                Functions                #
