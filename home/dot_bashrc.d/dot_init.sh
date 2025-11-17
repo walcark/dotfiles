@@ -1,6 +1,21 @@
-THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd )"
+# ----- logging functions FIRST -----
+function info() {
+    echo -e "\e[32m* ${*}\e[39m"
+}
 
-# Common utilities
+function warn() {
+    echo -e "\e[33m* ${*}\e[39m"
+}
+
+function error() {
+    echo -e "\e[31m* ${*}\e[39m"
+}
+
+function nln() {
+    echo ""
+}
+
+# ----- THEN detect OS, etc -----
 case "${OSTYPE}" in
   solaris*) OSNAME="SOLARIS" ;;
   darwin*)  OSNAME="MACOSX" ;;
@@ -10,28 +25,10 @@ case "${OSTYPE}" in
   *)        OSNAME="${OSTYPE}" ;;
 esac
 
-# Source all the 'bashrc.d' files
-# NOTE: Prepending `\` to `ls` to prevent alias expansion and just use plain `ls`
-for BASHRC_D_FILE in $(\ls ${THIS_DIR}/*.sh); do
+# ----- THEN source .bashrc.d -----
+THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd )"
+
+for BASHRC_D_FILE in "$THIS_DIR"/*.sh; do
   source "${BASHRC_D_FILE}"
 done
 
-# Colorful logging helper: INFO (green) level
-function info() {
-	echo -e "\e[32m* ${*}\e[39m"
-}
-
-# Colorful logging helper: WARN (orange) level
-function warn() {
-	echo -e "\e[33m* ${*}\e[39m"
-}
-
-# Colorful logging helper: ERROR (red) level
-function error() {
-	echo -e "\e[31m* ${*}\e[39m"
-}
-
-# Colorful logging helper: just a new line
-function nln() {
-	echo ""
-}
