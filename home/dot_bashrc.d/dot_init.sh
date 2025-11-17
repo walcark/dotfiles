@@ -1,4 +1,5 @@
-# ----- logging functions FIRST -----
+#!/usr/bin/env bash
+
 function info() {
     echo -e "\e[32m* ${*}\e[39m"
 }
@@ -15,7 +16,6 @@ function nln() {
     echo ""
 }
 
-# ----- THEN detect OS, etc -----
 case "${OSTYPE}" in
   solaris*) OSNAME="SOLARIS" ;;
   darwin*)  OSNAME="MACOSX" ;;
@@ -25,7 +25,6 @@ case "${OSTYPE}" in
   *)        OSNAME="${OSTYPE}" ;;
 esac
 
-# ----- THEN source .bashrc.d -----
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd )"
 
 for BASHRC_D_FILE in "$THIS_DIR"/*.sh; do
