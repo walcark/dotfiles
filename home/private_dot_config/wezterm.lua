@@ -18,12 +18,13 @@ config.window_padding = {
 	top = 5, 
 	bottom = 5,
 }
+
 -- Split window -- 
 config.keys = {
 	{ 
 		key = "h",
 		mods = "WIN",
-		action = act.splitpane({
+		action = act.SplitPane({
 			direction = "left",
 			size = { Percent = 50 },
 		}),
@@ -31,7 +32,7 @@ config.keys = {
 	{ 
 		key = "j",
 		mods = "WIN",
-		action = act.splitpane({
+		action = act.SplitPane({
 			direction = "down",
 			size = { Percent = 50 },
 		}),
@@ -39,7 +40,7 @@ config.keys = {
 	{ 
 		key = "k",
 		mods = "WIN",
-		action = act.splitpane({
+		action = act.SplitPane({
 			direction = "up",
 			size = { Percent = 50 },
 		}),
@@ -47,7 +48,7 @@ config.keys = {
 	{ 
 		key = "l",
 		mods = "WIN",
-		action = act.splitpane({
+		action = act.SplitPane({
 			direction = "right",
 			size = { Percent = 50 },
 		}),
