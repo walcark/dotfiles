@@ -1,5 +1,5 @@
 local wezterm = require 'wezterm'
-
+local act = wezterm.action
 local config = {}
 
 -- Global appearance --
@@ -17,6 +17,41 @@ config.window_padding = {
 	right = 5, 
 	top = 5, 
 	bottom = 5,
+}
+-- Split window -- 
+config.keys = {
+	{ 
+		key = "h",
+		mods = "WIN",
+		action = act.splitpane({
+			direction = "left",
+			size = { Percent = 50 },
+		}),
+	},
+	{ 
+		key = "j",
+		mods = "WIN",
+		action = act.splitpane({
+			direction = "down",
+			size = { Percent = 50 },
+		}),
+	},
+	{ 
+		key = "k",
+		mods = "WIN",
+		action = act.splitpane({
+			direction = "up",
+			size = { Percent = 50 },
+		}),
+	},
+	{ 
+		key = "l",
+		mods = "WIN",
+		action = act.splitpane({
+			direction = "right",
+			size = { Percent = 50 },
+		}),
+	},
 }
 
 -- Shell --
