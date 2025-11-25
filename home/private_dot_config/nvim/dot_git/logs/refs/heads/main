@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 e3572e1f5e1c297212c3deeb17b7863139ce663e walcark <kevin.walcarius@cnes.fr> 1763975234 +0100	clone: from https://github.com/NvChad/starter
+e3572e1f5e1c297212c3deeb17b7863139ce663e 5fb3db9112b30718bbbecf933c15364486966a16 walcark <kevin.walcarius@cnes.fr> 1763980211 +0100	commit: feat: install vim-fugitive.
