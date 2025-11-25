@@ -50,4 +50,4 @@ alias cmap='chezmoi apply'
 alias cmt='chezmoi execute-template'
 alias cmtf='chezmoi execute-template -f'
 
-info "[$SCRIPT_NAME] Common aliases sourced to shell."
+# info "[$SCRIPT_NAME] Common aliases sourced to shell."

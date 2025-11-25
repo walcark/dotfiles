@@ -11,4 +11,4 @@ SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 # add all pixi downloaded binaries to path
 [ -d "$HOME/.pixi/bin" ] && PATH="$HOME/.pixi/bin:$PATH" 
 
-info "[$SCRIPT_NAME] $HOME/bin and $HOME/.local/bin added to PATH."
+#info "[$SCRIPT_NAME] $HOME/bin and $HOME/.local/bin added to PATH."

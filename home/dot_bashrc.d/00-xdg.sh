@@ -24,4 +24,4 @@ mkdir -p \
     "$(dirname "$PYTHONHISTFILE")"
 
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
-info "[$SCRIPT_NAME] Loaded XDG base directories"
+# info "[$SCRIPT_NAME] Loaded XDG base directories"
