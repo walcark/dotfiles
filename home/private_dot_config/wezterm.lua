@@ -4,13 +4,14 @@ local config = {}
 
 -- Global appearance --
 config.color_scheme = 'Tokyo Night Storm'
-config.font = wezterm.font("JetBrainsMono Nerd Font")
+config.font = wezterm.font("JetBrainsMonoNL Nerd Font")
 config.font_size = 12.0
 
 -- Window --
 config.window_background_opacity = 0.95
 config.window_decorations = "RESIZE"
 config.enable_tab_bar = false
+config.harfbuzz_features = { 'calt=0' }
 config.enable_scroll_bar = true
 config.window_padding = {
     left = 5, 
@@ -23,33 +24,33 @@ config.window_padding = {
 config.keys = {
 	{ 
 		key = "h",
-		mods = "WIN",
+		mods = "CTRL",
 		action = act.SplitPane({
-			direction = "left",
+			direction = "Left",
 			size = { Percent = 50 },
 		}),
 	},
 	{ 
 		key = "j",
-		mods = "WIN",
+		mods = "CTRL",
 		action = act.SplitPane({
-			direction = "down",
+			direction = "Down",
 			size = { Percent = 50 },
 		}),
 	},
 	{ 
 		key = "k",
-		mods = "WIN",
+		mods = "CTRL",
 		action = act.SplitPane({
-			direction = "up",
+			direction = "Up",
 			size = { Percent = 50 },
 		}),
 	},
 	{ 
 		key = "l",
-		mods = "WIN",
+		mods = "CTRL",
 		action = act.SplitPane({
-			direction = "right",
+			direction = "Right",
 			size = { Percent = 50 },
 		}),
 	},
