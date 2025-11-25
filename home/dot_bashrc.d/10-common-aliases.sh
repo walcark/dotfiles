@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
-
 # Navigation
 # ----------
 alias ll='ls -alF'
@@ -13,7 +11,6 @@ alias c='clear'
 alias h='history | tail -50'
 alias mkdir='mkdir -p'
 alias rm='rm -i'
-alias chezmoi='~/bin/chezmoi'
 alias ..='cd ..'
 alias ...='cd ../..'
 
@@ -28,13 +25,11 @@ alias gl='git pull'
 alias gco='git checkout'
 alias gcb='git checkout -b'
 alias grh='git reset --hard HEAD'
-alias gclone='source /home/kwalcarius/.clone_gitlab'
 
-# Navigation
-# ----------
-alias data='cd /home/kwalcarius/data'
+# Personnal
+# ---------
+alias vi='nvim'
 alias code='code .'
-alias scpt='pass -c trex.cnes.fr && scp'
 alias para='cd ~/PARA'
 alias proj='cd ~/PARA/projects'
 alias arch='cd ~/PARA/archives'
