@@ -10,7 +10,7 @@ echo "[chezmoi] Installing Pixi..."
 
 # Set installer location
 TMP_SCRIPT="/tmp/install_pixi.sh"
-FALLBACK_SCRIPT="$HOME/.local/share/chezmoi/install/common/pixi_install_script.sh"
+FALLBACK_SCRIPT="$HOME/.local/share/chezmoi/install/common/pixi_backup.sh"
 
 # Installing pixi
 if curl -fsSL https://pixi.sh/install.sh -o "$TMP_SCRIPT"; then
