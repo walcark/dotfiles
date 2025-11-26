@@ -40,6 +40,10 @@ trex() {
 	echo "Clipboard is now empty."
 }
 
+github_token() {
+	keepassxc-cli clip ~/Sync/pswd/mdps_keepass.kdbx "Tokens/Github"
+}
+
 # 2) ENVIRONMENT VARIABLES
 # -------------------------
 export CUDA_HOME=/usr/local/cuda
