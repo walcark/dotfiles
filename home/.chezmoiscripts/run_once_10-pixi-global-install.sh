@@ -13,7 +13,8 @@ pixi global install \
     bat \
     tree \
     gh \
-    nvim
+    nvim \
+    ruff
 
 echo "[chezmoi] CLI installed via Pixi"
 
