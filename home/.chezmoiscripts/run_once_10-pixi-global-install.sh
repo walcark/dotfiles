@@ -14,7 +14,10 @@ pixi global install \
     tree \
     gh \
     nvim \
-    ruff
+    ruff \
+    typst \
+    typst-lsp \
+    plantuml
 
 echo "[chezmoi] CLI installed via Pixi"
 
