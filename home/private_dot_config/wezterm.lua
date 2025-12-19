@@ -22,9 +22,29 @@ config.window_padding = {
 
 -- Split window -- 
 config.keys = {
+  {
+    key = 'h',
+    mods = 'ALT',
+    action = act.ActivatePaneDirection 'Left',
+  },
+  {
+    key = 'l',
+    mods = 'ALT',
+    action = act.ActivatePaneDirection 'Right',
+  },
+  {
+    key = 'k',
+    mods = 'ALT',
+    action = act.ActivatePaneDirection 'Up',
+  },
+  {
+    key = 'j',
+    mods = 'ALT',
+    action = act.ActivatePaneDirection 'Down',
+  },
 	{ 
 		key = "h",
-		mods = "CTRL",
+		mods = "CTRL|ALT",
 		action = act.SplitPane({
 			direction = "Left",
 			size = { Percent = 50 },
@@ -32,7 +52,7 @@ config.keys = {
 	},
 	{ 
 		key = "j",
-		mods = "CTRL",
+		mods = "CTRL|ALT",
 		action = act.SplitPane({
 			direction = "Down",
 			size = { Percent = 50 },
@@ -40,7 +60,7 @@ config.keys = {
 	},
 	{ 
 		key = "k",
-		mods = "CTRL",
+		mods = "CTRL|ALT",
 		action = act.SplitPane({
 			direction = "Up",
 			size = { Percent = 50 },
@@ -48,12 +68,17 @@ config.keys = {
 	},
 	{ 
 		key = "l",
-		mods = "CTRL",
+		mods = "CTRL|ALT",
 		action = act.SplitPane({
 			direction = "Right",
 			size = { Percent = 50 },
 		}),
 	},
+  {
+    key = "L",
+    mods = "CTRL",
+    action = act.DisableDefaultAssignment
+  }
 }
 
 -- Shell --
