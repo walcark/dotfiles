@@ -17,7 +17,8 @@ pixi global install \
     ruff \
     typst \
     typst-lsp \
-    plantuml
+    plantuml \
+    stylua
 
 echo "[chezmoi] CLI installed via Pixi"
 
