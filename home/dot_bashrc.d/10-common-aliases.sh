@@ -34,6 +34,9 @@ alias para='cd ~/PARA'
 alias proj='cd ~/PARA/projects'
 alias arch='cd ~/PARA/archives'
 alias ress='cd ~/PARA/ressources'
+alias conf='cd ~/.config'
+alias loc='cd ~/.local'
+
 
 # Chezmoi
 # -------
