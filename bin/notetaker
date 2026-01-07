@@ -1,0 +1,13 @@
+#!/usr/bin/env 
+
+noteFilename="$HOME/PARA/ressources/notes/src/note-$(date +%Y-%m-%d).md"
+
+if [ ! -f $noteFilename ]; then
+  echo "# Notes for $(date + %y-%m-%d)" > $noteFilename
+fi
+
+nvim -c "norm Go" \
+  -c "norm Go## $(date +%H:%M)" \
+  -c "norm G2o" \
+  -c "norm zz" \
+  -c "startinsert" $noteFilename
