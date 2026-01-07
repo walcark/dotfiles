@@ -18,7 +18,8 @@ pixi global install \
     typst \
     typst-lsp \
     plantuml \
-    stylua
+    stylua \
+    python=3.11
 
 echo "[chezmoi] CLI installed via Pixi"
 

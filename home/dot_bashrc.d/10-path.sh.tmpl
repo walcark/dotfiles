@@ -5,4 +5,9 @@ SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 [ -d "$HOME/bin" ] && PATH="$HOME/bin:$PATH"
 [ -d "$HOME/.local/bin" ] && PATH="$HOME/.local/bin:$PATH"
 [ -d "$HOME/.pixi/bin" ] && PATH="$HOME/.pixi/bin:$PATH" 
+
+{{ if regexMatch "^trex" .chezmoi.hostname }}
+[ -d "/work/scratch/data/walcark/pixi/bin" ] $$ PATH="/work/scratch/data/walcark/pixi/bin:$PATH"
+{{ end }}
+
 #info "[$SCRIPT_NAME] $HOME/bin and $HOME/.local/bin added to PATH."

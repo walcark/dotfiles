@@ -41,7 +41,6 @@ export MOPSMAP_PATH=/home/kwalcarius/bin/mopsmap
 #                               Load modules                            #
 #=======================================================================#
 {{ if regexMatch "^trex" .chezmoi.hostname }}
-module load conda/22.11.1
 module load cuda/11.7.0
 alias sinter='unset SLURM_JOB_ID ; srun'
 {{ end }}
