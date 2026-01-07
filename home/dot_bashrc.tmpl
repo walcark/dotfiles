@@ -19,6 +19,7 @@ shopt -s checkwinsize
 #=======================================================================#
 #                          Environment variables                        #
 #=======================================================================#
+# Global
 export HISTSIZE=1000
 export HISTFILESIZE=${HISTSIZE}
 export HISTCONTROL=ignoreboth
@@ -26,34 +27,23 @@ export EDITOR=vim
 export STARSHIP_CONFIG=~/.config/starship.toml
 export WEZTERM_CONFIG_FILE=~/.config/wezterm.lua
 
-#=========================================#
-#                Functions                #
-#=========================================#
-trex() {
-	keepassxc-cli clip ~/Sync/pswd/mdps_keepass.kdbx "Server/Trex"
-	sleep 0.2
-	echo "Password for Trex was copied to clipboard for 15 seconds..."
-	echo "Connecting to walcark@trex.cnes.fr with ssh..."
-	ssh -X walcark@trex.cnes.fr
-	sleep 15
-	xclip -selection clipboard /dev/null
-	echo "Clipboard is now empty."
-}
-
-github_token() {
-	keepassxc-cli clip ~/Sync/pswd/mdps_keepass.kdbx "Tokens/Github"
-}
-
-# 2) ENVIRONMENT VARIABLES
-# -------------------------
+# Still to sort
 export CUDA_HOME=/usr/local/cuda
 export PATH=$CUDA_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 export SOS_DATA_ROOT=/home/kwalcarius/data/sos
-export SOS_ABS_ROOT=${LIBS_PATH}/SOS_ABS_V5.1
 export SMG_ABS_ROOT=${LIBS_PATH}/smartg
 export DATA_PATH=/home/kwalcarius/data
 export MOPSMAP_PATH=/home/kwalcarius/bin/mopsmap
+
+
+#=======================================================================#
+#                               Load modules                            #
+#=======================================================================#
+{{ if regexMatch "^trex" .chezmoi.hostname }}
+module load cuda/11.7.0
+alias sinter='unset SLURM_JOB_ID ; srun'
+{{ end }}
 
 
 #=======================================================================#
