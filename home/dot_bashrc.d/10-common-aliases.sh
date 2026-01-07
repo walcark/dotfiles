@@ -30,13 +30,22 @@ alias grh='git reset --hard HEAD'
 # ---------
 alias vi='nvim'
 alias code='code .'
-alias para='cd ~/PARA'
+PARA_DIR="${HOME}/PARA"
 alias proj='cd ~/PARA/projects'
 alias arch='cd ~/PARA/archives'
-alias ress='cd ~/PARA/ressources'
 alias conf='cd ~/.config'
 alias loc='cd ~/.local'
+alias vik='NVIM_APPNAME="nvim-kickstart" nvim'
+alias via='NVIM_APPNAME="nvim-astro" nvim'
 
+# Ressources aliases
+# ------------------
+alias ress="cd ${PARA_DIR}/ressources"
+alias diary="cd ${PARA_DIR}/ressources/diary"
+alias notes="vik ${PARA_DIR}/ressources/notes"
+alias umld="cd ${PARA_DIR}/ressources/diagrams"
+alias pyf="cd ${PARA_DIR}/ressources/python"
+alias zot="cd ${PARA_DIR}/ressources/zotero"
 
 # Chezmoi
 # -------
