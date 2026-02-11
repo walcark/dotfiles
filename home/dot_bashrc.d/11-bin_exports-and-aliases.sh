@@ -7,5 +7,8 @@ export PATH="${BIN_PATH}/keepassxc:${PATH}"
 # Export path for configurations files
 export STARSHIP_CONFIG="$HOME/.config/starship.toml"
 
+# Export enviromnent variables for specific libs 
+export MOPSMAP_DATASET_PATH="/home/kwalcarius/bin/mopsmap/optical_dataset"
+
 # Add alias for some binaries
 alias kpxc="keepassxc-cli"
