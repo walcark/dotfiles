@@ -7,7 +7,6 @@ return {
   "AstroNvim/astrocommunity",
   { import = "astrocommunity.pack.lua" },
   { import = "astrocommunity.pack.typst" },
-  { import = "astrocommunity.pack.python-ruff" },
   { import = "astrocommunity.pack.markdown" },
   { import = "astrocommunity.pack.chezmoi" },
   { import = "astrocommunity.markdown-and-latex.render-markdown-nvim" },
