@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-keepassxc-cli clip ~/Sync/pswd/mdps_keepass.kdbx "Server/Trex"
+keepassxc-cli clip ~/.local/share/keepassxc/pswd/mdps_keepass.kdbx "Server/Trex"
 sleep 0.2
 echo "Password for Trex was copied to clipboard for 15 seconds..."
 TERM=xterm-256color ssh -X walcark@trex.cnes.fr
