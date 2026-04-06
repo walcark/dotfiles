@@ -8,7 +8,6 @@ return {
     optional = true,
     ---@type AstroLSPOpts
     opts = {
-      ---@diagnostic disable: missing-fields
       config = {
         basedpyright = {
           before_init = function(_, c)
@@ -21,21 +20,24 @@ return {
               -- See: https://docs.basedpyright.com/latest/configuration/language-server-settings/
               -- See: https://docs.basedpyright.com/latest/configuration/config-files/#overriding-language-server-settings
               analysis = {
-                typeCheckingMode = "recommended",
+                typeCheckingMode = "standard",
                 autoImportCompletions = true,
               },
             },
           }
         },
         ruff = {
-          -- See: https://docs.astral.sh/ruff/editors/settings/#format_backend
+          configurationPreference = "filesystemFirst",
           on_attach = function(client)
             client.server_capabilities.hoverProvider = false
           end,
-          configurationPreference = "filesystemFirst",
-          lineLength = 79,
-          organizeImports = true,
-          showSyntaxErrors = true
+          settings = {
+            -- See: https://docs.astral.sh/ruff/editors/settings/#format_backend
+            configurationPreference = "filesystemFirst",
+            lineLength = 79,
+            organizeImports = true,
+            showSyntaxErrors = true
+          },
         },
       },
     },
@@ -70,7 +72,7 @@ return {
     optional = true,
     opts = function(_, opts)
       opts.ensure_installed =
-          require("astrocore").list_insert_unique(opts.ensure_installed, { "basedpyright", "debugpy" })
+          require("astrocore").list_insert_unique(opts.ensure_installed, { "basedpyright", "debugpy", "ruff" })
     end,
   },
   {

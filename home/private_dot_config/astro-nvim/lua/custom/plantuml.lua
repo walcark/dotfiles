@@ -8,7 +8,7 @@ function M.compile_puml()
     return
   end
 
-  local cmd = { 'plantuml', '-tpng', '-o', '../png', file }
+  local cmd = { 'plantuml', '-tpng', '-o', './png', file }
 
   vim.fn.jobstart(cmd, {
     stdout_buffered = true,
