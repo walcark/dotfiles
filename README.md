@@ -1,4 +1,4 @@
-# dotfiles
+# My Dotfiles
 
 <p align="center">
   <a href="https://www.chezmoi.io">
