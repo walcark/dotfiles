@@ -20,6 +20,7 @@ pixi global install \
     plantuml \
     stylua \
     lazygit \
+    restic \
     python=3.11
 
 echo "[chezmoi] CLI installed via Pixi"

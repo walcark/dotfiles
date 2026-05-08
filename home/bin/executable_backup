@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+# Export restic repository and password
+KDBX="$HOME/.local/share/keepassxc/pswd/mdps_keepass.kdbx"
+ENTRY="Secrets/Restic"
+
+export RESTIC_REPOSITORY=$(keepassxc-cli show -s "$KDBX" "$ENTRY" --attributes URL)
+export RESTIC_PASSWORD=$(keepassxc-cli show -s "$KDBX" "$ENTRY" --attributes PassWord)
+
+# Save important home folders to the rustic database
+restic backup \
+    "$HOME/dev/" \
+    "$HOME/bin/" \
+    "$HOME/PARA/" \
+    "$HOME/library/" \
+    "$HOME/zk/" \
+    "$HOME/docs/" \
+    --exclude-file "$HOME/.config/restic/exclude.txt" \
+    --tag backup
+
+

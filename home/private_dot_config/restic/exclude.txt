@@ -1,0 +1,10 @@
+# exclude all virtual environments
+**/.pixi/
+**/.venv/
+
+# exclude all caches
+**/__pycache__/
+*.pyc
+
+# Exclude third party softwares
+**/third-party
