@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# Description: Manage zettelkasten tutorials in ~/zk/tutorials
+
+set -euo pipefail
+
+TUTO_DIR="$HOME/zk/tutorials"
+
+usage() {
+    echo "tuto — manage zettelkasten tutorials in ~/zk/tutorials"
+    echo ""
+    echo "Usage: tuto list          list all tutorials"
+    echo "       tuto show <name>   display a tutorial"
+    echo "       tuto new <name>    create and open a new tutorial"
+    echo "       tuto del <name>    delete a tutorial"
+    exit 1
+}
+
+cmd="${1:-}"
+
+case "$cmd" in
+    list)
+        filter_tags=""
+        shift
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --tags) shift; filter_tags="$1"; shift ;;
+                *) echo "Unknown option: $1" >&2; exit 1 ;;
+            esac
+        done
+
+        if [ ! -d "$TUTO_DIR" ] || [ -z "$(ls -A "$TUTO_DIR"/*.md 2>/dev/null)" ]; then
+            echo "(no tutorials yet)"
+            exit 0
+        fi
+
+        found=0
+        while IFS= read -r -d '' f; do
+            name=$(basename "$f" .md)
+            title=$(grep -m1 '^# ' "$f" 2>/dev/null | sed 's/^# //' || echo "$name")
+            tags=$(grep -m1 '^Tags:' "$f" 2>/dev/null | sed 's/^Tags: *//' || true)
+            normalized_tags=$(echo "$tags" | tr -d ' ')
+
+            if [ -n "$filter_tags" ]; then
+                match=1
+                IFS=',' read -ra ftags <<< "$filter_tags"
+                for ft in "${ftags[@]}"; do
+                    [[ ",$normalized_tags," == *",${ft},"* ]] || { match=0; break; }
+                done
+                [ "$match" -eq 1 ] || continue
+            fi
+
+            if [ -n "$tags" ]; then
+                printf "%-30s  %-30s  [%s]\n" "$name" "$title" "$tags"
+            else
+                printf "%-30s  %s\n" "$name" "$title"
+            fi
+            found=1
+        done < <(find "$TUTO_DIR" -maxdepth 1 -name '*.md' -print0 | sort -z)
+
+        [ "$found" -eq 1 ] || echo "(no tutorials found)"
+        ;;
+
+    show)
+        [ $# -lt 2 ] && usage
+        name="${2%.md}"
+        file="$TUTO_DIR/$name.md"
+        if [ ! -f "$file" ]; then
+            echo "Error: tutorial '$name' not found" >&2
+            exit 1
+        fi
+        if command -v bat &>/dev/null; then
+            bat --language=markdown --style=plain "$file"
+        else
+            less "$file"
+        fi
+        ;;
+
+    new)
+        [ $# -lt 2 ] && usage
+        name=$(echo "$2" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+        file="$TUTO_DIR/$name.md"
+        mkdir -p "$TUTO_DIR"
+        if [ -f "$file" ]; then
+            echo "Error: tutorial '$name' already exists" >&2
+            exit 1
+        fi
+        title=$(echo "$name" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2); print}')
+        read -rp "Tags (comma-separated, optional): " tags
+        date=$(date +%Y-%m-%d)
+        cat > "$file" <<EOF
+# $title
+
+Date: $date
+Tags: $tags
+
+## Tutorial
+
+## Key commands
+EOF
+        NVIM_APPNAME="astro-nvim" ${VISUAL:-nvim} "$file"
+        ;;
+
+    del)
+        [ $# -lt 2 ] && usage
+        name="${2%.md}"
+        file="$TUTO_DIR/$name.md"
+        if [ ! -f "$file" ]; then
+            echo "Error: tutorial '$name' not found" >&2
+            exit 1
+        fi
+        read -rp "Delete '$name'? [y/N] " confirm
+        [[ "$confirm" =~ ^[Yy]$ ]] || exit 0
+        rm "$file"
+        echo "Deleted '$name'."
+        ;;
+
+    *)
+        usage
+        ;;
+esac
