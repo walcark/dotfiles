@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-TUTO_DIR="$HOME/zk/tutorials"
+TUTO_DIR="$HOME/submodules/zk/tutorials"
 
 usage() {
     echo "tuto — manage zettelkasten tutorials in ~/zk/tutorials"
@@ -11,6 +11,7 @@ usage() {
     echo "Usage: tuto list          list all tutorials"
     echo "       tuto show <name>   display a tutorial"
     echo "       tuto new <name>    create and open a new tutorial"
+    echo "       tuto edit <name>   edit a tutorial and commit changes"
     echo "       tuto del <name>    delete a tutorial"
     exit 1
 }
@@ -98,6 +99,19 @@ Tags: $tags
 ## Key commands
 EOF
         NVIM_APPNAME="astro-nvim" ${VISUAL:-nvim} "$file"
+        git -C "$HOME/submodules/zk" add "$file" && git -C "$HOME/submodules/zk" commit -m "tuto: add $name" && git -C "$HOME/submodules/zk" push
+        ;;
+
+    edit)
+        [ $# -lt 2 ] && usage
+        name="${2%.md}"
+        file="$TUTO_DIR/$name.md"
+        if [ ! -f "$file" ]; then
+            echo "Error: tutorial '$name' not found" >&2
+            exit 1
+        fi
+        NVIM_APPNAME="astro-nvim" ${VISUAL:-nvim} "$file"
+        git -C "$HOME/submodules/zk" add "$file" && git -C "$HOME/submodules/zk" commit -m "tuto: update $name" && git -C "$HOME/submodules/zk" push
         ;;
 
     del)
@@ -111,7 +125,7 @@ EOF
         read -rp "Delete '$name'? [y/N] " confirm
         [[ "$confirm" =~ ^[Yy]$ ]] || exit 0
         rm "$file"
-        echo "Deleted '$name'."
+        git -C "$HOME/submodules/zk" rm "$file" && git -C "$HOME/submodules/zk" commit -m "tuto: delete $name" && git -C "$HOME/submodules/zk" push
         ;;
 
     *)

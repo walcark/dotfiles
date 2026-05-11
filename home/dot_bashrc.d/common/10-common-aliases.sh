@@ -17,6 +17,9 @@ alias grh='git reset --hard HEAD'
 
 # General usage
 # -------------------------------------------------------------------
+export NVIM_APPNAME="astro-nvim"
+export VISUAL=nvim
+export EDITOR=nvim
 alias vik='NVIM_APPNAME="nvim-kickstart" nvim'
 alias vi='NVIM_APPNAME="astro-nvim" nvim'
 

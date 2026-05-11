@@ -1,0 +1,4 @@
+["submodules/zk"]
+    type = "git-repo"
+    url = "https://github.com/walcark/zk.git"
+    refreshPeriod = "24h"
