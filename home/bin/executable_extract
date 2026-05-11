@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ $# -ne 1 ]; then
+    echo "Usage: extract <archive>"
+    exit 1
+fi
+
+file="$1"
+
+if [ ! -f "$file" ]; then
+    echo "Error: '$file' is not a file" >&2
+    exit 1
+fi
+
+base=$(basename "$file")
+
+case "$base" in
+    *.tar.bz2) destdir="${base%.tar.bz2}" ;;
+    *.tar.gz)  destdir="${base%.tar.gz}"  ;;
+    *.tar.xz)  destdir="${base%.tar.xz}"  ;;
+    *.tar.zst) destdir="${base%.tar.zst}" ;;
+    *.tar)     destdir="${base%.tar}"     ;;
+    *.bz2)     destdir="${base%.bz2}"     ;;
+    *.gz)      destdir="${base%.gz}"      ;;
+    *.zip)     destdir="${base%.zip}"     ;;
+    *.7z)      destdir="${base%.7z}"      ;;
+    *.rar)     destdir="${base%.rar}"     ;;
+    *.xz)      destdir="${base%.xz}"      ;;
+    *.zst)     destdir="${base%.zst}"     ;;
+    *)         echo "Error: unknown format '${base##*.}'" >&2; exit 1 ;;
+esac
+
+mkdir -p "$destdir"
+
+case "$base" in
+    *.tar.bz2) tar xjf "$file" -C "$destdir"                         ;;
+    *.tar.gz)  tar xzf "$file" -C "$destdir"                         ;;
+    *.tar.xz)  tar xJf "$file" -C "$destdir"                         ;;
+    *.tar.zst) tar --zstd -xf "$file" -C "$destdir"                  ;;
+    *.tar)     tar xf  "$file" -C "$destdir"                         ;;
+    *.bz2)     bunzip2 -c "$file" > "$destdir/${base%.bz2}"          ;;
+    *.gz)      gunzip  -c "$file" > "$destdir/${base%.gz}"           ;;
+    *.zip)     unzip "$file" -d "$destdir"                           ;;
+    *.7z)      7z x "$file" -o"$destdir"                             ;;
+    *.rar)     unrar x "$file" "$destdir/"                           ;;
+    *.xz)      unxz   -c "$file" > "$destdir/${base%.xz}"            ;;
+    *.zst)     zstd -d "$file" -o "$destdir/${base%.zst}"            ;;
+esac
