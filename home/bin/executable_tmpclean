@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Description: Delete data in the temporary directory.
+
+# Variables
+TARGET="$HOME/tmp"
+LOGDIR="$HOME/.local/share/logs"
+LOGFILE="$LOGDIR/clean_tmp.log"
+MAXLINES=100
+
+# Creating log directory if necessary
+mkdir -p "$LOGDIR"
+echo "=== $(date): Cleaning $TARGET ===" >> "$LOGFILE" 2>&1
+
+# Delete data in ~/tmp
+if [ -d "$TARGET" ]; then
+    rm -rf "$TARGET"/* >> "$LOGFILE" 2>&1
+    echo "Done." >> "$LOGFILE"
+else
+    echo "Warning: $TARGET does not exist!" >> "$LOGFILE"
+fi
+
+# Only keep last MAXLINES in the log file
+tail -n "$MAXLINES" "$LOGFILE" > "$LOGFILE.tmp" && mv "$LOGFILE.tmp" "$LOGFILE"

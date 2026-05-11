@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Description: List executables in ~/bin with their descriptions
 
-set -euo pipefail
-
 bin_dir="$HOME/bin"
 
 if [ ! -d "$bin_dir" ]; then
@@ -14,12 +12,12 @@ max_len=0
 while IFS= read -r -d '' f; do
     name=$(basename "$f")
     len=${#name}
-    (( len > max_len )) && max_len=$len
+    if [ "$len" -gt "$max_len" ]; then max_len=$len; fi
 done < <(find "$bin_dir" -maxdepth 1 -type f -executable -print0)
 
 while IFS= read -r -d '' f; do
     name=$(basename "$f")
-    desc=$(head -10 "$f" | grep -m1 '^# Description:' | sed 's/^# Description: *//')
-    [ -z "$desc" ] && desc="(no description)"
+    desc=$(head -10 "$f" | grep -m1 '^# Description:' | sed 's/^# Description: *//' || true)
+    [ -n "$desc" ] || desc="(no description)"
     printf "%-*s  %s\n" "$max_len" "$name" "$desc"
 done < <(find "$bin_dir" -maxdepth 1 -type f -executable -print0 | sort -z)
