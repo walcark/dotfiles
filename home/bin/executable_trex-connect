@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Description: Copy Trex password to clipboard and SSH into trex.cnes.fr
 set -euo pipefail
 
 keepassxc-cli clip ~/.local/share/keepassxc/pswd/mdps_keepass.kdbx "Server/Trex"

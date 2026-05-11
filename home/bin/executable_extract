@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Description: Extract any archive into a folder named after the archive
 set -euo pipefail
 
 if [ $# -ne 1 ]; then

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Description: Remove Python cache files (__pycache__, *.pyc, .pytest_cache, etc.)
 set -euo pipefail
 
 ROOT="${1:-.}"

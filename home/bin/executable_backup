@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Description: Backup home folders to restic repository via KeePassXC credentials
 
 # Export restic repository and password
 KDBX="$HOME/.local/share/keepassxc/pswd/mdps_keepass.kdbx"

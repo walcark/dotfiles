@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Description: Start an interactive SLURM session on an A100 GPU node
 
 set -euo pipefail
 
