@@ -5,6 +5,7 @@ echo "[chezmoi] Installing Pixi global tools..."
 
 # Universal tools
 pixi global install \
+    git-delta \
     starship \
     ripgrep \
     fd-find \
