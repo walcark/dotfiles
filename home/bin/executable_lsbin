@@ -8,16 +8,39 @@ if [ ! -d "$bin_dir" ]; then
     exit 1
 fi
 
-max_len=0
+scripts=()
+binaries=()
+
 while IFS= read -r -d '' f; do
+    read -r firstline < "$f" 2>/dev/null || true
+    if [[ "$firstline" == '#!'* ]]; then
+        scripts+=("$f")
+    else
+        binaries+=("$f")
+    fi
+done < <(find "$bin_dir" -maxdepth 1 -type f -executable -print0 | sort -z)
+
+max_len=0
+for f in "${scripts[@]}"; do
     name=$(basename "$f")
     len=${#name}
     if [ "$len" -gt "$max_len" ]; then max_len=$len; fi
-done < <(find "$bin_dir" -maxdepth 1 -type f -executable -print0)
+done
 
-while IFS= read -r -d '' f; do
-    name=$(basename "$f")
-    desc=$(head -10 "$f" | grep -m1 '^# Description:' | sed 's/^# Description: *//' || true)
-    [ -n "$desc" ] || desc="(no description)"
-    printf "%-*s  %s\n" "$max_len" "$name" "$desc"
-done < <(find "$bin_dir" -maxdepth 1 -type f -executable -print0 | sort -z)
+if [ "${#scripts[@]}" -gt 0 ]; then
+    printf "\033[1mScripts\033[0m\n"
+    for f in "${scripts[@]}"; do
+        name=$(basename "$f")
+        desc=$(head -10 "$f" | grep -m1 '^# Description:' | sed 's/^# Description: *//' || true)
+        [ -n "$desc" ] || desc="(no description)"
+        printf "  %-*s  %s\n" "$max_len" "$name" "$desc"
+    done
+fi
+
+if [ "${#binaries[@]}" -gt 0 ]; then
+    [ "${#scripts[@]}" -gt 0 ] && echo
+    printf "\033[1mBinaries\033[0m\n"
+    for f in "${binaries[@]}"; do
+        printf "  %s\n" "$(basename "$f")"
+    done
+fi
