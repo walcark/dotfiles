@@ -1,2 +1,20 @@
+{{- $type     := promptStringOnce . "machine.type"   "Machine type (client/server)"                   "client" -}}
+{{- $distro   := promptStringOnce . "machine.distro" "Distro (ubuntu/arch)"                           "ubuntu" -}}
+{{- $pixiHome := promptStringOnce . "pixi.home"      "Pixi home dir (vide = ~/.pixi)"                 ""       -}}
+{{- $email    := promptStringOnce . "git.email"      "Git email"                        "kevin.walcarius@gmail.com" -}}
+
 [edit]
-	command = "vi"
+    command = "vi"
+
+[data.machine]
+    type     = {{ $type | quote }}
+    distro   = {{ $distro | quote }}
+    hostname = {{ .chezmoi.hostname | quote }}
+    isClient = {{ eq $type "client" }}
+    isServer = {{ eq $type "server" }}
+
+[data.pixi]
+    home = {{ if $pixiHome }}{{ $pixiHome | quote }}{{ else }}{{ joinPath .chezmoi.homeDir ".pixi" | quote }}{{ end }}
+
+[data.git]
+    email = {{ $email | quote }}

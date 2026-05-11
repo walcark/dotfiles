@@ -1,0 +1,27 @@
+# Patterns match destination paths (relative to $HOME).
+# Rules for bashrc.d subdirs are no-ops until Phase 2 creates those directories.
+
+{{- if .machine.isServer }}
+
+# --- bashrc.d: exclude client subtree (active after Phase 2) ---
+.bashrc.d/client
+
+{{- else }}
+
+# --- bashrc.d: exclude server subtree (active after Phase 2) ---
+.bashrc.d/server
+
+{{- end }}
+
+# --- Distro-specific bashrc.d (active after Phase 2) ---
+{{- if ne .machine.distro "ubuntu" }}
+.bashrc.d/client/ubuntu
+{{- end }}
+{{- if ne .machine.distro "arch" }}
+.bashrc.d/client/arch
+{{- end }}
+
+# --- Cluster-specific (active after Phase 2) ---
+{{- if not (hasPrefix "trex" .machine.hostname) }}
+.bashrc.d/server/trex
+{{- end }}
