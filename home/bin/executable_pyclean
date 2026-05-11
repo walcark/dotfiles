@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="${1:-.}"
+
+find "$ROOT" -name "__pycache__" -exec rm -rf {} + 2>/dev/null
+find "$ROOT" -name "*.pyc" -delete 2>/dev/null
+find "$ROOT" -type d \( -name ".pytest_cache" -o -name ".mypy_cache" -o -name "*.egg-info" \) \
+    -exec rm -rf {} + 2>/dev/null
+
+echo "Python cache cleaned in ${ROOT}."
