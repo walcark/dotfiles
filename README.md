@@ -124,29 +124,54 @@ All CLI tools are managed by [pixi](https://pixi.sh) global installs — no syst
 
 ## Knowledge Base
 
-A personal tutorial system built around `~/submodules/zk/`, a private git repo synced via `.chezmoiexternal.toml` (pulled daily on `chezmoi apply`).
+All knowledge lives in `~/submodules/zk/`, a private git repo synced via `.chezmoiexternal.toml` (pulled daily on `chezmoi apply`). Every write operation auto-commits and pushes.
+
+```
+zk/
+├── tutorials/    # step-by-step procedures
+├── snippets/     # reusable code, organized by language
+├── templates/    # full project skeletons
+├── notes/        # free-form notes
+└── capture/      # inbox
+```
+
+### tuto
 
 ```bash
-tuto new <name>     # create a tutorial, prompt for tags, open in AstroNvim, auto-commit & push
-tuto list           # list all tutorials with titles and tags
-tuto list --tags python,pypi   # filter by tags (comma-separated, AND logic)
-tuto show <name>    # display a tutorial (bat if available, else less)
-tuto edit <name>    # edit a tutorial, auto-commit & push on save
-tuto del <name>     # delete a tutorial with confirmation, auto-commit & push
+tuto new <name>              # create, prompt for tags, open in AstroNvim
+tuto list                    # list all with titles and tags
+tuto list --tags python,pypi # filter by tags (comma-separated, AND logic)
+tuto show <name>             # display (bat if available, else less)
+tuto edit <name>             # edit, auto-commit & push on save
+tuto del <name>              # delete with confirmation
 ```
 
-Tutorial format:
+Format: `# Title`, `Date:`, `Tags:` header, then `## Tutorial` and `## Key commands`.
 
-```markdown
-# Title
+### snip
 
-Date: YYYY-MM-DD
-Tags: tag1,tag2
+Snippets are stored as `snippets/<lang>/<name>.<ext>` and organized by language.
 
-## Tutorial
-
-## Key commands
+```bash
+snip new <lang> <name>       # create and open in AstroNvim
+snip list                    # list all snippets grouped by language
+snip list --lang python      # filter by language
+snip show <lang> <name>      # display with syntax highlighting
+snip copy <lang> <name>      # copy to clipboard (wl-copy / xclip)
 ```
+
+### tmpl
+
+Templates are full directory skeletons stored under `templates/<name>/`.
+
+```bash
+tmpl new <name>              # save current directory as a template
+tmpl list                    # list templates with file count
+tmpl use <name>              # apply template into current directory
+tmpl use <name> <dest>       # apply template into a new directory
+```
+
+Available templates: `python-pixi-lib` (src layout, pixi, ruff, mypy, pytest, CI/CD workflows).
 
 ---
 
@@ -176,19 +201,30 @@ Drop it in `dot_bashrc.d/common/25-functions.sh`.
 2. Add `# Description: ...` on line 2 — `lsbin` will pick it up automatically
 3. Run `chezmoi add ~/bin/<name>` if the script already exists locally
 
-### Adding a new tutorial
+### Adding a new tutorial, snippet or template
 
 ```bash
-tuto new <name>
+tuto new <name>        # guided: prompts for tags, opens editor, auto-pushes
+snip new <lang> <name> # opens editor on a blank file, auto-pushes
+tmpl new <name>        # snapshots current directory, auto-pushes
 ```
-
-It creates the file, opens your editor, and pushes to the private `walcark/zk` repo automatically.
 
 ### Adding a new machine profile
 
 1. Add a new subdirectory under `dot_bashrc.d/` (e.g. `hpc/`)
 2. Update `dot_bashrc.tmpl` to source it when the profile matches
 3. Add the profile value to `.chezmoi.toml.tmpl`
+
+---
+
+## Roadmap
+
+- [ ] **Other shells** — Fish (native autocompletion, abbreviations), Zsh
+- [ ] **Tmux** — add config alongside WezTerm/Kitty for terminal multiplexing
+- [ ] **Neovim integration** — Telescope picker for `snip` and `:TmplUse` command, so snippets and templates are accessible directly from the editor without leaving neovim
+- [ ] **Improve SLURM** — richer `sinter` options (memory, CPU count, partition), `server/05-exports.sh` with default SLURM env vars
+- [ ] **lazygit & lazydocker configs** — add to `private_dot_config/`
+- [ ] **Capture & TODO tool** — CLI tool for quick idea capture and task tracking inspired by org-mode (inbox capture, priorities, deadlines, agenda view), backed by `zk/capture/`
 
 ---
 
