@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# Machine profile — baked in by chezmoi at apply time
+MACHINE_TYPE="{{ .machine.type }}"
+MACHINE_DISTRO="{{ .machine.distro }}"
+
+function info()  { echo -e "\e[32m* ${*}\e[39m"; }
+function warn()  { echo -e "\e[33m* ${*}\e[39m"; }
+function error() { echo -e "\e[31m* ${*}\e[39m"; }
+
+function source_dir() {
+    local dir="$1"
+    [[ -d "$dir" ]] || return 0
+    for f in "$dir"/*.sh; do
+        [[ -f "$f" ]] && source "$f"
+    done
+}
+
+THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd )"
+
+source_dir "$THIS_DIR/common"
+source_dir "$THIS_DIR/${MACHINE_TYPE}"
+
+if [[ "$MACHINE_TYPE" == "client" ]]; then
+    source_dir "$THIS_DIR/client/${MACHINE_DISTRO}"
+elif [[ "$MACHINE_TYPE" == "server" ]]; then
+    case "$(hostname -s)" in
+        trex*) source_dir "$THIS_DIR/server/trex" ;;
+    esac
+fi
