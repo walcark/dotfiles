@@ -30,10 +30,6 @@ fi
 
 echo "[chezmoi] Pixi installation completed."
 
-# Add Pixi to path
-export PATH="$HOME/"
-
-# Add pixi to path
 export PATH="$HOME/.pixi/bin:$PATH"
 
 echo "[chezmoi] Pixi installed"
