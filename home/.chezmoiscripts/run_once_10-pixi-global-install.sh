@@ -22,6 +22,7 @@ pixi global install \
     stylua \
     lazygit \
     restic \
+    zoxide \
     python=3.11
 
 echo "[chezmoi] CLI installed via Pixi"
