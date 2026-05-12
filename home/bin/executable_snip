@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Description: Manage code snippets in ~/submodules/zk/snippets
 
-SNIP_DIR="$HOME/submodules/zk/snippets"
-ZK_DIR="$HOME/submodules/zk"
+set -euo pipefail
+
+source "$HOME/bin/lib/zk.sh"
+
+SNIP_DIR="$ZK_DIR/snippets"
 
 ext_for_lang() {
     case "$1" in
@@ -24,10 +27,11 @@ ext_for_lang() {
 usage() {
     echo "snip — manage code snippets in ~/submodules/zk/snippets"
     echo ""
-    echo "Usage: snip list [--lang <lang>]   list snippets"
-    echo "       snip new <lang> <name>       create a new snippet"
-    echo "       snip show <lang> <name>      display a snippet"
-    echo "       snip copy <lang> <name>      copy a snippet to clipboard"
+    echo "Usage: snip list [--lang <lang>]     list snippets"
+    echo "       snip new <lang> <name>        create a new snippet"
+    echo "       snip show <lang> <name>       display a snippet"
+    echo "       snip edit <lang> <name>       edit a snippet and commit changes"
+    echo "       snip copy <lang> <name>       copy a snippet to clipboard"
     exit 1
 }
 
@@ -58,67 +62,46 @@ case "$cmd" in
             printf "  %s\n" "$name"
             found=1
         done < <(find "$SNIP_DIR" -mindepth 2 -maxdepth 2 -type f -print0 2>/dev/null | sort -z)
-
         [ "$found" -eq 1 ] || echo "(no snippets yet)"
         ;;
 
     new)
         [ $# -lt 3 ] && usage
-        lang="$2"
-        name="$3"
+        lang="$2"; name="$3"
         ext=$(ext_for_lang "$lang")
         file="$SNIP_DIR/$lang/$name.$ext"
         mkdir -p "$SNIP_DIR/$lang"
-        if [ -f "$file" ]; then
-            echo "Error: snippet '$lang/$name' already exists" >&2
-            exit 1
-        fi
+        [ ! -f "$file" ] || { error "Snippet '$lang/$name' already exists"; exit 1; }
         touch "$file"
-        NVIM_APPNAME="astro-nvim" ${VISUAL:-nvim} "$file"
-        git -C "$ZK_DIR" add "$file" && git -C "$ZK_DIR" commit -m "snip: add $lang/$name" && git -C "$ZK_DIR" push
+        zk_editor "$file"
+        zk_push "$file" "snip: add $lang/$name"
         ;;
 
     show)
         [ $# -lt 3 ] && usage
-        lang="$2"
-        name="$3"
-        ext=$(ext_for_lang "$lang")
-        file="$SNIP_DIR/$lang/$name.$ext"
-        if [ ! -f "$file" ]; then
-            echo "Error: snippet '$lang/$name' not found" >&2
-            exit 1
-        fi
-        if command -v bat &>/dev/null; then
-            bat "$file"
-        else
-            less "$file"
-        fi
+        lang="$2"; name="$3"
+        file="$SNIP_DIR/$lang/$name.$(ext_for_lang "$lang")"
+        [ -f "$file" ] || { error "Snippet '$lang/$name' not found"; exit 1; }
+        zk_show "$file" "$lang"
+        ;;
+
+    edit)
+        [ $# -lt 3 ] && usage
+        lang="$2"; name="$3"
+        file="$SNIP_DIR/$lang/$name.$(ext_for_lang "$lang")"
+        [ -f "$file" ] || { error "Snippet '$lang/$name' not found"; exit 1; }
+        zk_editor "$file"
+        zk_push "$file" "snip: update $lang/$name"
         ;;
 
     copy)
         [ $# -lt 3 ] && usage
-        lang="$2"
-        name="$3"
-        ext=$(ext_for_lang "$lang")
-        file="$SNIP_DIR/$lang/$name.$ext"
-        if [ ! -f "$file" ]; then
-            echo "Error: snippet '$lang/$name' not found" >&2
-            exit 1
-        fi
-        if command -v wl-copy &>/dev/null; then
-            wl-copy < "$file"
-        elif command -v xclip &>/dev/null; then
-            xclip -selection clipboard < "$file"
-        elif command -v pbcopy &>/dev/null; then
-            pbcopy < "$file"
-        else
-            echo "Error: no clipboard command found (wl-copy, xclip, pbcopy)" >&2
-            exit 1
-        fi
+        lang="$2"; name="$3"
+        file="$SNIP_DIR/$lang/$name.$(ext_for_lang "$lang")"
+        [ -f "$file" ] || { error "Snippet '$lang/$name' not found"; exit 1; }
+        zk_clipboard "$file"
         echo "Copied '$name' to clipboard."
         ;;
 
-    *)
-        usage
-        ;;
+    *) usage ;;
 esac

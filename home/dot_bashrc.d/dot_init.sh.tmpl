@@ -4,9 +4,14 @@
 MACHINE_TYPE="{{ .machine.type }}"
 MACHINE_DISTRO="{{ .machine.distro }}"
 
-function info()  { echo -e "\e[32m* ${*}\e[39m"; }
-function warn()  { echo -e "\e[33m* ${*}\e[39m"; }
-function error() { echo -e "\e[31m* ${*}\e[39m"; }
+# Generic utilities (info/warn/error/OSNAME) — fallback if lib not deployed yet
+if [[ -f "$HOME/bin/lib/shell.sh" ]]; then
+    source "$HOME/bin/lib/shell.sh"
+else
+    function info()  { echo -e "\e[32m* ${*}\e[39m"; }
+    function warn()  { echo -e "\e[33m* ${*}\e[39m"; }
+    function error() { echo -e "\e[31m* ${*}\e[39m"; }
+fi
 
 function source_dir() {
     local dir="$1"

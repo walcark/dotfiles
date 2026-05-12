@@ -3,8 +3,9 @@
 
 set -euo pipefail
 
-NOTE_DIR="$HOME/submodules/zk/notes"
-ZK_DIR="$HOME/submodules/zk"
+source "$HOME/bin/lib/zk.sh"
+
+NOTE_DIR="$ZK_DIR/notes"
 
 usage() {
     echo "note — manage personal notes in ~/submodules/zk/notes"
@@ -16,13 +17,6 @@ usage() {
     echo "       note del <name>               delete a note"
     echo "       note tags                     list all tags in use"
     exit 1
-}
-
-_zk_push() {
-    local file="$1" msg="$2"
-    git -C "$ZK_DIR" add "$file"
-    git -C "$ZK_DIR" commit -m "$msg"
-    git -C "$ZK_DIR" push
 }
 
 cmd="${1:-}"
@@ -38,86 +32,65 @@ case "$cmd" in
             esac
         done
 
-        if [ ! -d "$NOTE_DIR" ] || [ -z "$(find "$NOTE_DIR" -maxdepth 1 -name '*.md' 2>/dev/null | head -1)" ]; then
-            echo "(no notes yet)"
-            exit 0
+        if [ -z "$(find "$NOTE_DIR" -maxdepth 1 -name '*.md' 2>/dev/null | head -1)" ]; then
+            echo "(no notes yet)"; exit 0
         fi
 
         found=0
         while IFS= read -r -d '' f; do
+            [ -n "$filter_tags" ] && ! zk_match_tags "$f" "$filter_tags" && continue
             name=$(basename "$f" .md)
             title=$(grep -m1 '^# ' "$f" 2>/dev/null | sed 's/^# //' || echo "$name")
             tags=$(grep -m1 '^Tags:' "$f" 2>/dev/null | sed 's/^Tags: *//' || true)
-            normalized_tags=$(echo "$tags" | tr -d ' ')
-
-            if [ -n "$filter_tags" ]; then
-                match=1
-                IFS=',' read -ra ftags <<< "$filter_tags"
-                for ft in "${ftags[@]}"; do
-                    [[ ",$normalized_tags," == *",${ft},"* ]] || { match=0; break; }
-                done
-                [ "$match" -eq 1 ] || continue
-            fi
-
-            if [ -n "$tags" ]; then
-                printf "%-30s  %-35s  [%s]\n" "$name" "$title" "$tags"
-            else
-                printf "%-30s  %s\n" "$name" "$title"
-            fi
+            [ -n "$tags" ] \
+                && printf "%-30s  %-35s  [%s]\n" "$name" "$title" "$tags" \
+                || printf "%-30s  %s\n" "$name" "$title"
             found=1
         done < <(find "$NOTE_DIR" -maxdepth 1 -name '*.md' -print0 | sort -z)
-
         [ "$found" -eq 1 ] || echo "(no notes found for given tags)"
         ;;
 
     show)
         [ $# -lt 2 ] && usage
-        name="${2%.md}"
-        file="$NOTE_DIR/$name.md"
-        [ -f "$file" ] || { echo "Error: note '$name' not found" >&2; exit 1; }
-        if command -v bat &>/dev/null; then
-            bat --language=markdown --style=plain "$file"
-        else
-            less "$file"
-        fi
+        file="$NOTE_DIR/${2%.md}.md"
+        [ -f "$file" ] || { error "Note '${2%.md}' not found"; exit 1; }
+        zk_show "$file"
         ;;
 
     new)
         [ $# -lt 2 ] && usage
-        name=$(echo "$2" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+        name=$(zk_normalize_name "$2")
         file="$NOTE_DIR/$name.md"
         mkdir -p "$NOTE_DIR"
-        [ ! -f "$file" ] || { echo "Error: note '$name' already exists" >&2; exit 1; }
-        title=$(echo "$name" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2); print}')
+        [ ! -f "$file" ] || { error "Note '$name' already exists"; exit 1; }
         read -rp "Tags (comma-separated, optional): " tags
-        date=$(date +%Y-%m-%d)
         cat > "$file" <<EOF
-# $title
+# $(zk_capitalize_title "$name")
 
-Date: $date
+Date: $(date +%Y-%m-%d)
 Tags: $tags
 
 ## Notes
 
 EOF
-        NVIM_APPNAME="astro-nvim" ${VISUAL:-nvim} "$file"
-        _zk_push "$file" "note: add $name"
+        zk_editor "$file"
+        zk_push "$file" "note: add $name"
         ;;
 
     edit)
         [ $# -lt 2 ] && usage
         name="${2%.md}"
         file="$NOTE_DIR/$name.md"
-        [ -f "$file" ] || { echo "Error: note '$name' not found" >&2; exit 1; }
-        NVIM_APPNAME="astro-nvim" ${VISUAL:-nvim} "$file"
-        _zk_push "$file" "note: update $name"
+        [ -f "$file" ] || { error "Note '$name' not found"; exit 1; }
+        zk_editor "$file"
+        zk_push "$file" "note: update $name"
         ;;
 
     del)
         [ $# -lt 2 ] && usage
         name="${2%.md}"
         file="$NOTE_DIR/$name.md"
-        [ -f "$file" ] || { echo "Error: note '$name' not found" >&2; exit 1; }
+        [ -f "$file" ] || { error "Note '$name' not found"; exit 1; }
         read -rp "Delete '$name'? [y/N] " confirm
         [[ "$confirm" =~ ^[Yy]$ ]] || exit 0
         git -C "$ZK_DIR" rm "$file"
@@ -127,16 +100,8 @@ EOF
 
     tags)
         [ -d "$NOTE_DIR" ] || { echo "(no notes yet)"; exit 0; }
-        find "$NOTE_DIR" -maxdepth 1 -name '*.md' -exec grep -h '^Tags:' {} \; \
-            | sed 's/^Tags: *//' \
-            | tr ',' '\n' \
-            | tr -d ' ' \
-            | sort -u \
-            | grep -v '^$' \
-            || echo "(no tags yet)"
+        zk_list_tags "$NOTE_DIR" || echo "(no tags yet)"
         ;;
 
-    *)
-        usage
-        ;;
+    *) usage ;;
 esac

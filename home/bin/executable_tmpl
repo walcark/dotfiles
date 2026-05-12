@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Description: Manage project templates in ~/submodules/zk/templates
 
-TMPL_DIR="$HOME/submodules/zk/templates"
-ZK_DIR="$HOME/submodules/zk"
+set -euo pipefail
+
+source "$HOME/bin/lib/zk.sh"
+
+TMPL_DIR="$ZK_DIR/templates"
 
 usage() {
     echo "tmpl — manage project templates in ~/submodules/zk/templates"
@@ -31,45 +34,30 @@ case "$cmd" in
         [ $# -lt 2 ] && usage
         name="$2"
         dest="$TMPL_DIR/$name"
-        if [ -d "$dest" ]; then
-            echo "Error: template '$name' already exists" >&2
-            exit 1
-        fi
+        [ ! -d "$dest" ] || { error "Template '$name' already exists"; exit 1; }
         mkdir -p "$dest"
         if command -v rsync &>/dev/null; then
             rsync -a \
-                --exclude='.git' \
-                --exclude='.pixi' \
-                --exclude='__pycache__' \
-                --exclude='*.pyc' \
-                --exclude='.venv' \
-                --exclude='node_modules' \
+                --exclude='.git' --exclude='.pixi' --exclude='__pycache__' \
+                --exclude='*.pyc' --exclude='.venv' --exclude='node_modules' \
                 --exclude='dist' \
                 . "$dest/"
         else
             cp -r . "$dest/"
         fi
-        git -C "$ZK_DIR" add "$dest" && git -C "$ZK_DIR" commit -m "tmpl: add $name" && git -C "$ZK_DIR" push
+        zk_push "$dest" "tmpl: add $name"
         echo "Saved current directory as template '$name'."
         ;;
 
     use)
         [ $# -lt 2 ] && usage
-        name="$2"
-        dest="${3:-.}"
+        name="$2"; dest="${3:-.}"
         src="$TMPL_DIR/$name"
-        if [ ! -d "$src" ]; then
-            echo "Error: template '$name' not found" >&2
-            exit 1
-        fi
-        if [ "$dest" != "." ]; then
-            mkdir -p "$dest"
-        fi
+        [ -d "$src" ] || { error "Template '$name' not found"; exit 1; }
+        [ "$dest" = "." ] || mkdir -p "$dest"
         cp -r "$src/." "$dest/"
         echo "Applied template '$name' to '$dest'."
         ;;
 
-    *)
-        usage
-        ;;
+    *) usage ;;
 esac
