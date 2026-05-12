@@ -20,7 +20,7 @@ EXTS=("*.py" "*.cpp" "*.hpp" "*.cc" "*.hh" "*.h" "*.c" "*.sh" "*.lua")
 if command -v rg &>/dev/null; then
     GLOB_ARGS=()
     for ext in "${EXTS[@]}"; do GLOB_ARGS+=(-g "$ext"); done
-    rg --no-heading --line-number --color never \
+    rg --no-heading --line-number --color never --no-context \
         -e 'TODO|FIXME|HACK|NOTE|XXX' \
         "${GLOB_ARGS[@]}" "$ROOT" 2>/dev/null > "$TMPFILE" || true
 else

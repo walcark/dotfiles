@@ -1,0 +1,14 @@
+# Follow symlinks
+--follow
+
+# Show line numbers
+--line-number
+
+# Smarter case: case-insensitive unless pattern has uppercase
+--smart-case
+
+# Use colors
+--color=auto
+
+# Show context around matches (1 line above and below)
+--context=1
