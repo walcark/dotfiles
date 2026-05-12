@@ -1,0 +1,28 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "glow binary version in chezmoi.toml.tmpl",
+      "fileMatch": ["home/\\.chezmoi\\.toml\\.tmpl$"],
+      "matchStrings": [
+        "glow\\s+=\\s+\"(?<currentValue>[\\d.]+)\""
+      ],
+      "depNameTemplate": "charmbracelet/glow",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "KeePassXC version in chezmoi.toml.tmpl",
+      "fileMatch": ["home/\\.chezmoi\\.toml\\.tmpl$"],
+      "matchStrings": [
+        "keepassxc\\s+=\\s+\"(?<currentValue>[\\d.]+)\""
+      ],
+      "depNameTemplate": "keepassxreboot/keepassxc",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver"
+    }
+  ]
+}

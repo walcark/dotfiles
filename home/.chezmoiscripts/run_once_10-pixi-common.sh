@@ -23,6 +23,7 @@ pixi global install \
     lazygit \
     restic \
     zoxide \
+    tldr \
     python=3.11
 
 echo "[chezmoi] CLI installed via Pixi"

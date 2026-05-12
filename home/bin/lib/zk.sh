@@ -14,7 +14,9 @@ zk_push() {
 
 zk_show() {
     local file="$1" lang="${2:-markdown}"
-    if command -v bat &>/dev/null; then
+    if [[ "$lang" == "markdown" ]] && command -v glow &>/dev/null; then
+        glow "$file"
+    elif command -v bat &>/dev/null; then
         bat --language="$lang" --style=plain "$file"
     else
         less "$file"

@@ -8,6 +8,12 @@
     url = "git@github.com:walcark/nvim-configs.git"
     refreshPeriod = "168h"
 
+[".local/bin/glow"]
+    type = "archive-file"
+    url = "https://github.com/charmbracelet/glow/releases/download/v{{ .versions.glow }}/glow_{{ .versions.glow }}_Linux_x86_64.tar.gz"
+    path = "glow_{{ .versions.glow }}_Linux_x86_64/glow"
+    executable = true
+
 [".config/kitty/themes/kovidgoyal-kitty-themes"]
     type = "git-repo"
     url = "https://github.com/kovidgoyal/kitty-themes.git"

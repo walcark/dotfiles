@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# keepassxc version: {{ .versions.keepassxc }}
 set -Eeuo pipefail
 
 function download_keepassxc() {
@@ -25,8 +26,9 @@ function download_keepassxc() {
     mv squashfs-root "$extract_dir"
 
     echo "[INFO] Déplacement dans ~/.local/share/keepassxc..."
-    rm -rf "$base_dir" || true
     mkdir -p "$base_dir"
+    # Only remove the binary extract dir, never touch user data (databases, etc.)
+    rm -rf "$base_dir/keepassxc_extract"
     mv "$extract_dir" "$base_dir/"
 
     echo "[INFO] Création des liens symboliques..."
@@ -40,7 +42,7 @@ function download_keepassxc() {
 }
 
 main() {
-    download_keepassxc "2.6.6"
+    download_keepassxc "{{ .versions.keepassxc }}"
 }
 
 main "$@"

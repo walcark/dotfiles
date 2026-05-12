@@ -1,21 +1,26 @@
 #!/usr/bin/env bash
 # Description: Backup home folders to restic repository via KeePassXC credentials
 
-# Export restic repository and password
-KDBX="$HOME/.local/share/keepassxc/pswd/mdps_keepass.kdbx"
-ENTRY="Secrets/Restic"
+# Load restic credentials from ~/.env.local
+# Expected variables: RESTIC_REPOSITORY, RESTIC_PASSWORD
+if [[ -f "$HOME/.env.local" ]]; then
+    source "$HOME/.env.local"
+fi
 
-export RESTIC_REPOSITORY=$(keepassxc-cli show -s "$KDBX" "$ENTRY" --attributes URL)
-export RESTIC_PASSWORD=$(keepassxc-cli show -s "$KDBX" "$ENTRY" --attributes PassWord)
+if [[ -z "${RESTIC_REPOSITORY:-}" || -z "${RESTIC_PASSWORD:-}" ]]; then
+    echo "Error: RESTIC_REPOSITORY and RESTIC_PASSWORD must be set in ~/.env.local" >&2
+    exit 1
+fi
 
-# Save important home folders to the rustic database
+export RESTIC_REPOSITORY RESTIC_PASSWORD
+
 restic backup \
     "$HOME/dev/" \
     "$HOME/bin/" \
-    "$HOME/PARA/" \
     "$HOME/library/" \
     "$HOME/zk/" \
     "$HOME/docs/" \
+    "$HOME/submodules/" \
     --exclude-file "$HOME/.config/restic/exclude.txt" \
     --tag backup
 

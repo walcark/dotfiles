@@ -7,8 +7,9 @@ exit 0
 
 echo "[chezmoi] Installing Pixi client tools..."
 
-# Tools for all client machines (add pixi global install calls here)
+# Tools for all client machines
 # Note: KeePassXC is installed via AppImage in run_once_20-install-keepassxc.sh
+# Note: glow (charmbracelet markdown renderer) not available on conda-forge
 
 {{ if eq .machine.distro "ubuntu" -}}
 # Ubuntu-specific tools
