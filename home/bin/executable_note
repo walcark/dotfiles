@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# Description: Manage personal notes in ~/submodules/zk/notes
+
+set -euo pipefail
+
+NOTE_DIR="$HOME/submodules/zk/notes"
+ZK_DIR="$HOME/submodules/zk"
+
+usage() {
+    echo "note — manage personal notes in ~/submodules/zk/notes"
+    echo ""
+    echo "Usage: note list [--tags <t1,t2>]   list notes, optionally filtered by tags"
+    echo "       note show <name>              display a note"
+    echo "       note new <name>               create and open a new note"
+    echo "       note edit <name>              edit a note and commit changes"
+    echo "       note del <name>               delete a note"
+    echo "       note tags                     list all tags in use"
+    exit 1
+}
+
+_zk_push() {
+    local file="$1" msg="$2"
+    git -C "$ZK_DIR" add "$file"
+    git -C "$ZK_DIR" commit -m "$msg"
+    git -C "$ZK_DIR" push
+}
+
+cmd="${1:-}"
+
+case "$cmd" in
+    list)
+        filter_tags=""
+        shift
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --tags) shift; filter_tags="$1"; shift ;;
+                *) echo "Unknown option: $1" >&2; exit 1 ;;
+            esac
+        done
+
+        if [ ! -d "$NOTE_DIR" ] || [ -z "$(find "$NOTE_DIR" -maxdepth 1 -name '*.md' 2>/dev/null | head -1)" ]; then
+            echo "(no notes yet)"
+            exit 0
+        fi
+
+        found=0
+        while IFS= read -r -d '' f; do
+            name=$(basename "$f" .md)
+            title=$(grep -m1 '^# ' "$f" 2>/dev/null | sed 's/^# //' || echo "$name")
+            tags=$(grep -m1 '^Tags:' "$f" 2>/dev/null | sed 's/^Tags: *//' || true)
+            normalized_tags=$(echo "$tags" | tr -d ' ')
+
+            if [ -n "$filter_tags" ]; then
+                match=1
+                IFS=',' read -ra ftags <<< "$filter_tags"
+                for ft in "${ftags[@]}"; do
+                    [[ ",$normalized_tags," == *",${ft},"* ]] || { match=0; break; }
+                done
+                [ "$match" -eq 1 ] || continue
+            fi
+
+            if [ -n "$tags" ]; then
+                printf "%-30s  %-35s  [%s]\n" "$name" "$title" "$tags"
+            else
+                printf "%-30s  %s\n" "$name" "$title"
+            fi
+            found=1
+        done < <(find "$NOTE_DIR" -maxdepth 1 -name '*.md' -print0 | sort -z)
+
+        [ "$found" -eq 1 ] || echo "(no notes found for given tags)"
+        ;;
+
+    show)
+        [ $# -lt 2 ] && usage
+        name="${2%.md}"
+        file="$NOTE_DIR/$name.md"
+        [ -f "$file" ] || { echo "Error: note '$name' not found" >&2; exit 1; }
+        if command -v bat &>/dev/null; then
+            bat --language=markdown --style=plain "$file"
+        else
+            less "$file"
+        fi
+        ;;
+
+    new)
+        [ $# -lt 2 ] && usage
+        name=$(echo "$2" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+        file="$NOTE_DIR/$name.md"
+        mkdir -p "$NOTE_DIR"
+        [ ! -f "$file" ] || { echo "Error: note '$name' already exists" >&2; exit 1; }
+        title=$(echo "$name" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2); print}')
+        read -rp "Tags (comma-separated, optional): " tags
+        date=$(date +%Y-%m-%d)
+        cat > "$file" <<EOF
+# $title
+
+Date: $date
+Tags: $tags
+
+## Notes
+
+EOF
+        NVIM_APPNAME="astro-nvim" ${VISUAL:-nvim} "$file"
+        _zk_push "$file" "note: add $name"
+        ;;
+
+    edit)
+        [ $# -lt 2 ] && usage
+        name="${2%.md}"
+        file="$NOTE_DIR/$name.md"
+        [ -f "$file" ] || { echo "Error: note '$name' not found" >&2; exit 1; }
+        NVIM_APPNAME="astro-nvim" ${VISUAL:-nvim} "$file"
+        _zk_push "$file" "note: update $name"
+        ;;
+
+    del)
+        [ $# -lt 2 ] && usage
+        name="${2%.md}"
+        file="$NOTE_DIR/$name.md"
+        [ -f "$file" ] || { echo "Error: note '$name' not found" >&2; exit 1; }
+        read -rp "Delete '$name'? [y/N] " confirm
+        [[ "$confirm" =~ ^[Yy]$ ]] || exit 0
+        git -C "$ZK_DIR" rm "$file"
+        git -C "$ZK_DIR" commit -m "note: delete $name"
+        git -C "$ZK_DIR" push
+        ;;
+
+    tags)
+        [ -d "$NOTE_DIR" ] || { echo "(no notes yet)"; exit 0; }
+        find "$NOTE_DIR" -maxdepth 1 -name '*.md' -exec grep -h '^Tags:' {} \; \
+            | sed 's/^Tags: *//' \
+            | tr ',' '\n' \
+            | tr -d ' ' \
+            | sort -u \
+            | grep -v '^$' \
+            || echo "(no tags yet)"
+        ;;
+
+    *)
+        usage
+        ;;
+esac
