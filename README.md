@@ -18,7 +18,7 @@ Personal dotfiles managed with [chezmoi](https://www.chezmoi.io/). Linux only.
 ## Install
 
 ```bash
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply <your-repo-url>
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply walcark/dotfiles
 ```
 
 chezmoi bootstraps itself if not present, then runs the setup scripts in order:
@@ -56,7 +56,9 @@ home/
 │   ├── client/            # loaded on client machines only
 │   │   └── 05-exports.sh
 │   └── server/            # loaded on server/HPC machines only
-│       └── 20-aliases.sh
+│       ├── 20-aliases.sh
+│       └── trex/          # loaded on trex cluster only (hostname trex*)
+│           └── 10-env.sh
 ├── dot_gitconfig
 └── private_dot_config/
     ├── astro-nvim/
@@ -88,6 +90,24 @@ This drives two things:
 Files or directories can be ignored per profile, so server-only configs never land on a client and vice versa.
 
 To add machine-specific behavior: drop a file in `dot_bashrc.d/client/` or `dot_bashrc.d/server/` — it will be picked up automatically on the next shell start.
+
+**3. Machine-specific local overrides (`~/.env.local`)**
+
+Variables tied to my personal data layout on a given machine (project paths, dataset locations, tool installs) are **not** versioned in dotfiles — they change per machine and per reorganization.
+
+I create `~/.env.local` directly on each machine. It is sourced last by `common/99-local.sh` on every shell start:
+
+```bash
+# ~/.env.local — not versioned, managed directly on each machine
+export LIBS_PATH=$HOME/libs
+export PROJ_PATH=$HOME/dev/projects
+export SOS_DATA_ROOT=$HOME/data/sos
+
+# PYTHONPATH for local project sources
+for d in "$LIBS_PATH/adjeff/simulations" "$PROJ_PATH/mylab/src"; do
+    [ -d "$d" ] && export PYTHONPATH="$d:$PYTHONPATH"
+done
+```
 
 ---
 
