@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+# Description: Manage SSH key pairs in ~/.ssh/
+
+set -euo pipefail
+
+SSH_DIR="$HOME/.ssh"
+
+GREEN='\e[32m'
+GREY='\e[38;5;245m'
+BOLD='\e[1m'
+RESET='\e[0m'
+
+_clipboard() {
+    local file="$1"
+    if command -v wl-copy &>/dev/null; then
+        wl-copy < "$file"
+    elif command -v xclip &>/dev/null; then
+        xclip -selection clipboard < "$file"
+    elif command -v pbcopy &>/dev/null; then
+        pbcopy < "$file"
+    else
+        echo "No clipboard command found (wl-copy, xclip, pbcopy)" >&2
+        return 1
+    fi
+}
+
+_agent_fingerprints() {
+    ssh-add -l 2>/dev/null | awk '{print $2}' || true
+}
+
+_key_algo() {
+    local key="$1"
+    ssh-keygen -lf "$key" 2>/dev/null | awk '{print $4}' | tr -d '()' || echo "?"
+}
+
+_key_comment() {
+    local key="$1"
+    awk '{print $3}' "$key" 2>/dev/null || echo ""
+}
+
+_key_fingerprint() {
+    local key="$1"
+    ssh-keygen -lf "$key" 2>/dev/null | awk '{print $2}' || echo "?"
+}
+
+usage() {
+    echo "sshkey — manage SSH key pairs in ~/.ssh/"
+    echo ""
+    echo "Usage: sshkey list                  list all key pairs"
+    echo "       sshkey show <name>           print public key"
+    echo "       sshkey copy <name>           copy public key to clipboard"
+    echo "       sshkey new  <name>           generate new ed25519 key pair"
+    echo "       sshkey add  <name>           load key into ssh-agent"
+    echo "       sshkey fingerprint <name>    show key fingerprint"
+    exit 1
+}
+
+cmd="${1:-}"
+
+case "$cmd" in
+    list)
+        mapfile -t agent_fps < <(_agent_fingerprints)
+
+        found=0
+        while IFS= read -r -d '' pub; do
+            name=$(basename "$pub" .pub)
+            priv="$SSH_DIR/$name"
+            [[ -f "$priv" ]] || continue
+
+            algo=$(_key_algo "$pub")
+            comment=$(_key_comment "$pub")
+            fp=$(_key_fingerprint "$pub")
+
+            in_agent=0
+            for afp in "${agent_fps[@]:-}"; do
+                [[ "$afp" == "$fp" ]] && { in_agent=1; break; }
+            done
+
+            if [[ "$in_agent" -eq 1 ]]; then
+                status="${GREEN}● agent${RESET}"
+            else
+                status="${GREY}○ not loaded${RESET}"
+            fi
+
+            printf "  %-24s  %-10s  %-30s  %b\n" \
+                "$name" "$algo" "$comment" "$status"
+            found=1
+        done < <(find "$SSH_DIR" -maxdepth 1 -name '*.pub' -print0 | sort -z)
+
+        [[ "$found" -eq 1 ]] || echo "(no key pairs found in $SSH_DIR)"
+        ;;
+
+    show)
+        [[ $# -lt 2 ]] && usage
+        name="${2%.pub}"
+        pub="$SSH_DIR/$name.pub"
+        [[ -f "$pub" ]] || { echo "Key '$name' not found" >&2; exit 1; }
+        cat "$pub"
+        ;;
+
+    copy)
+        [[ $# -lt 2 ]] && usage
+        name="${2%.pub}"
+        pub="$SSH_DIR/$name.pub"
+        [[ -f "$pub" ]] || { echo "Key '$name' not found" >&2; exit 1; }
+        _clipboard "$pub"
+        echo "Public key '$name' copied to clipboard."
+        ;;
+
+    new)
+        [[ $# -lt 2 ]] && usage
+        name="$2"
+        priv="$SSH_DIR/$name"
+        [[ ! -f "$priv" ]] || { echo "Key '$name' already exists" >&2; exit 1; }
+        read -rp "Comment (e.g. user@hostname): " comment
+        ssh-keygen -t ed25519 -C "$comment" -f "$priv"
+        echo ""
+        echo "Key pair created:"
+        echo "  Private: $priv"
+        echo "  Public:  $priv.pub"
+        echo ""
+        echo "Public key to add to GitHub/GitLab:"
+        cat "$priv.pub"
+        ;;
+
+    add)
+        [[ $# -lt 2 ]] && usage
+        name="${2%.pub}"
+        priv="$SSH_DIR/$name"
+        [[ -f "$priv" ]] || { echo "Key '$name' not found" >&2; exit 1; }
+        ssh-add "$priv"
+        ;;
+
+    fingerprint)
+        [[ $# -lt 2 ]] && usage
+        name="${2%.pub}"
+        pub="$SSH_DIR/$name.pub"
+        [[ -f "$pub" ]] || { echo "Key '$name' not found" >&2; exit 1; }
+        ssh-keygen -lf "$pub"
+        ;;
+
+    *) usage ;;
+esac

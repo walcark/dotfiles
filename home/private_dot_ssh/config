@@ -1,0 +1,24 @@
+# Global defaults
+Host *
+    AddKeysToAgent yes
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+
+# GitHub
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/github_key
+
+# CNES GitLab
+Host gitlab.cnes.fr
+    HostName gitlab.cnes.fr
+    User git
+    IdentityFile ~/.ssh/gitlab-ssh-cnes-fr
+
+# Trex cluster
+Host trex
+    HostName trex.cnes.fr
+    User walcark
+    IdentityFile ~/.ssh/id_CELL200004
+    ForwardAgent yes

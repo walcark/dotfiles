@@ -1,13 +1,22 @@
 [user]
 	name = walcark
-	email = kevin.walcarius@cnes.fr
-[credential]
-	helper = store
+	email = {{ .git.email }}
+
 [init]
 	defaultBranch = main
 
+[pull]
+	rebase = true
+
+[push]
+	autoSetupRemote = true
+
+[rerere]
+	enabled = true
+
 [core]
 	pager = delta
+	excludesFile = ~/.gitignore_global
 
 [interactive]
 	diffFilter = delta --color-only
