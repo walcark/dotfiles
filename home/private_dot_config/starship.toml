@@ -1,10 +1,83 @@
+# =============================================================================
+# Prompt layout — two lines
+# line 1: user@host  directory  git  env  duration
+# line 2: ❯
+# =============================================================================
+
+format = """
+$username$hostname$directory$git_branch$git_status$pixi$python$cmd_duration
+$character"""
+
+# =============================================================================
+# Identity
+# =============================================================================
+
 [username]
-format = "[$user](bold blue)"
+format = "[$user]($style)"
+style_user = "bold blue"
 show_always = true
 
 [hostname]
-format = "[@$hostname](bold blue) "
+format = "[@$hostname]($style) "
+style = "bold blue"
 ssh_only = false
+
+# =============================================================================
+# Navigation
+# =============================================================================
+
+[directory]
+format = "[$path]($style)[$read_only]($read_only_style) "
+style = "bold cyan"
+truncation_length = 4
+truncate_to_repo = true
+read_only = " 󰌾"
+
+# =============================================================================
+# Git
+# =============================================================================
+
+[git_branch]
+format = "on [$symbol$branch]($style) "
+symbol = " "
+style = "bold purple"
+
+[git_status]
+format = '([$ahead_behind]($style) )'
+style = "bold red"
+ahead = "↑${count}"
+behind = "↓${count}"
+diverged = "↕${ahead_count}↓${behind_count}"
+
+# =============================================================================
+# Environments
+# =============================================================================
+
+[pixi]
+format = "via [$symbol($environment )]($style)"
+symbol = " "
+
+[python]
+format = 'via [$symbol($version )(\($virtualenv\) )]($style)'
+symbol = " "
+
+# =============================================================================
+# Timing & prompt character
+# =============================================================================
+
+[cmd_duration]
+min_time = 2_000
+format = "took [$duration]($style) "
+style = "bold yellow"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold green)"
+
+# =============================================================================
+# Language modules — show symbol only, no version
+# =============================================================================
 
 [bun]
 format = "via [$symbol]($style)"
@@ -111,16 +184,10 @@ format = 'via [$symbol]($style)'
 [php]
 format = 'via [$symbol]($style)'
 
-[pixi]
-format = 'via [$symbol($environment )]($style)'
-
 [pulumi]
 format = 'via [$symbol$stack]($style)'
 
 [purescript]
-format = 'via [$symbol]($style)'
-
-[python]
 format = 'via [$symbol]($style)'
 
 [quarto]
@@ -164,4 +231,3 @@ format = "via [$symbol]($style)"
 
 [zig]
 format = 'via [$symbol]($style)'
-
