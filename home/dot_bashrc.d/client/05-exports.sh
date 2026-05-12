@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export MOPSMAP_DATASET_PATH="/home/kwalcarius/dev/third-party/mopsmap/optical_dataset"
+export MOPSMAP_DATASET_PATH="$HOME/dev/third-party/mopsmap/optical_dataset"
 
 # PostgreSQL
 export DB_USER=kevin

@@ -20,47 +20,9 @@ shopt -s checkwinsize
 #                          Environment variables                        #
 #=======================================================================#
 # Global
-export HISTSIZE=1000
+export HISTSIZE=10000
 export HISTFILESIZE=${HISTSIZE}
 export HISTCONTROL=ignoreboth
-export EDITOR=vim
-export STARSHIP_CONFIG=~/.config/starship.toml
-export WEZTERM_CONFIG_FILE=~/.config/wezterm.lua
-
-# Still to sort
-export CUDA_HOME=/usr/local/cuda
-export PATH=$CUDA_HOME/bin:$PATH
-export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
-export SOS_DATA_ROOT=/home/kwalcarius/data/sos
-export SMG_ABS_ROOT=${LIBS_PATH}/smartg
-export MOPSMAP_PATH=/home/kwalcarius/bin/mopsmap
-
-
-#=======================================================================#
-#                               Load modules                            #
-#=======================================================================#
-{{ if regexMatch "^trex" .chezmoi.hostname }}
-module load cuda/11.7.0
-alias sinter='unset SLURM_JOB_ID ; srun'
-{{ end }}
-
-
-#=======================================================================#
-#                           Python environment                          #
-#=======================================================================#
-PYTHON_DIRS=(
-  "${LIBS_PATH}/DART/bin/python_scripts/DAO"
-  "${LIBS_PATH}/adjeff/simulations"
-  "${LIBS_PATH}/luts"
-  "${LIBS_PATH}/smartg_pv"
-  "${PROJ_PATH}/adjeffcorr/src"
-  "${PROJ_PATH}/mylab/src"
-  "${PROJ_PATH}/sampopti/src"
-)
-for d in "${PYTHON_DIRS[@]}"; do
-  [ -d "$d" ] && export PYTHONPATH="${d}:${PYTHONPATH}"
-done
-unset d
 
 ####################################################################################
 # Lancement ssh-agent

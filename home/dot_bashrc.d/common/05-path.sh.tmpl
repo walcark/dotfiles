@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 
-[ -d "$HOME/bin" ]        && PATH="$HOME/bin:$PATH"
-[ -d "$HOME/.local/bin" ] && PATH="$HOME/.local/bin:$PATH"
-[ -d "$HOME/.pixi/bin" ]  && PATH="$HOME/.pixi/bin:$PATH"
+[ -d "$HOME/bin" ]                          && PATH="$HOME/bin:$PATH"
+[ -d "$HOME/.local/bin" ]                   && PATH="$HOME/.local/bin:$PATH"
+[ -d "$HOME/.pixi/bin" ]                    && PATH="$HOME/.pixi/bin:$PATH"
+[ -d "$HOME/.local/share/keepassxc" ]       && PATH="$HOME/.local/share/keepassxc:$PATH"
 
-BIN_PATH="$HOME/.local/share"
-export PATH="${BIN_PATH}/pixi:${PATH}"
-export PATH="${BIN_PATH}/chezmoi:${PATH}"
-export PATH="${BIN_PATH}/keepassxc:${PATH}"
-
-export STARSHIP_CONFIG="$HOME/.config/starship.toml"
+export PATH
 
 {{ if regexMatch "^trex" .chezmoi.hostname }}
 [ -d "/work/scratch/data/walcark/pixi/bin" ] && PATH="/work/scratch/data/walcark/pixi/bin:$PATH"
