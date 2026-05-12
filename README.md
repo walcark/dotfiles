@@ -111,17 +111,76 @@ done
 
 ---
 
-## Scripts
+## SSH Keys
 
-All personal scripts live in `home/bin/` and are deployed to `~/bin/`. Run `lsbin` to list them with their descriptions.
+SSH keys are **not versioned** — only `~/.ssh/config` is managed by chezmoi. Keys live on each machine and are never shared.
+
+### Philosophy
+
+- **One key pair per machine** — identifies the machine, not the service
+- **One key, multiple services** — the same key is added to GitHub, GitLab, etc.
+- **Private key never leaves the machine** — agent forwarding is used to authenticate on remote servers
+
+### Setting up a new machine
+
+```bash
+# 1. Generate a key pair
+sshkey new id_<hostname>
+# → comment: walcark@<hostname>
+# → set a strong passphrase
+
+# 2. Add the public key to each service
+sshkey copy id_<hostname>   # copy to clipboard
+# → GitHub: Settings → SSH keys → New SSH key
+# → GitLab: Preferences → SSH keys → Add key
+
+# 3. Test
+ssh -T git@github.com
+```
+
+### Passphrase management with KeePassXC
+
+Store the passphrase in KeePassXC and let it auto-load the key into the agent on database unlock:
+
+1. Create an entry in KeePassXC (e.g. `SSH - <hostname>`)
+2. Set the passphrase as the entry password
+3. Go to the entry's **SSH Agent** tab → enable, select the private key file
+4. KeePassXC **Settings → SSH Agent** → enable integration
+
+From then on: open KeePassXC → key is in the agent → `git push`, `ssh trex`... all work without typing the passphrase.
+
+### Remote servers (agent forwarding)
+
+`ForwardAgent yes` is set for `trex` in `~/.ssh/config`. When connected to trex, the local agent is forwarded — no key file needed on the server, no passphrase to type.
+
+```bash
+# Check which keys are loaded and their agent status
+sshkey list
+
+# Add a key manually if needed
+sshkey add id_<hostname>
+```
+
+---
+
+## Scripts & Shell Functions
+
+### Scripts
+
+Standalone executables in `~/bin/` — work anywhere (interactive shell, scripts, cron). Run `lsbin` to list them.
 
 | Script | Description |
 |--------|-------------|
 | `lsbin` | List all executables in `~/bin` with descriptions, split between custom scripts and installed binaries |
-| `tuto` | Manage a zettelkasten of tutorials (see Knowledge Base section) |
+| `tuto` | Manage zettelkasten tutorials in `~/submodules/zk/tutorials` (see Knowledge Base section) |
+| `note` | Manage personal notes in `~/submodules/zk/notes` with tag filtering |
+| `snip` | Manage code snippets in `~/submodules/zk/snippets`, organized by language |
+| `tmpl` | Manage project template skeletons in `~/submodules/zk/templates` |
+| `sshkey` | Manage SSH key pairs in `~/.ssh/` — list, generate, show, copy public key |
 | `todo` | List TODO / FIXME / HACK / NOTE / XXX comments across source files |
 | `extract` | Extract any archive into a folder named after it |
 | `pyclean` | Remove Python cache artifacts (`__pycache__`, `*.pyc`, `.pytest_cache`) |
+| `tmpclean` | Delete contents of the temporary directory |
 | `backup` | Snapshot important home folders to a restic repository via KeePassXC credentials |
 | `github_token` | Copy GitHub token from KeePassXC to clipboard |
 | `sinter_a100` | Start an interactive SLURM session on an A100 GPU node |
@@ -129,6 +188,19 @@ All personal scripts live in `home/bin/` and are deployed to `~/bin/`. Run `lsbi
 | `trex-connect` | Copy server password to clipboard and SSH into trex.cnes.fr |
 
 Scripts self-document via a `# Description: ...` comment on line 2, which `lsbin` parses.
+
+### Shell Functions
+
+Available in interactive shell only (sourced via `bashrc.d/`). Cannot be called from non-interactive scripts.
+
+| Function | Usage | Description |
+|----------|-------|-------------|
+| `lspath` | `lspath [VAR]` | Pretty-print a colon-separated path variable (default: `PATH`) |
+| | `lspath -a <entry> [VAR]` | Add entry after (append, no-op if already present) |
+| | `lspath -b <entry> [VAR]` | Add entry before (prepend, deduplicates) |
+| | `lspath -r <entry> [VAR]` | Remove all occurrences of entry |
+| | `lspath -c [VAR]` | Remove non-existent directories and duplicates |
+| `mkcd` | `mkcd <dir>` | Create directory and cd into it |
 
 ---
 
@@ -245,6 +317,7 @@ tmpl new <name>        # snapshots current directory, auto-pushes
 - [ ] **Improve SLURM** — richer `sinter` options (memory, CPU count, partition), `server/05-exports.sh` with default SLURM env vars
 - [ ] **lazygit & lazydocker configs** — add to `private_dot_config/`
 - [ ] **Capture & TODO tool** — CLI tool for quick idea capture and task tracking inspired by org-mode (inbox capture, priorities, deadlines, agenda view), backed by `zk/capture/`
+- [ ] **KeePassXC secret management** — centralize all secret retrieval (tokens, passwords, API keys) through `keepassxc-cli` to avoid any plaintext secrets in dotfiles or environment variables
 
 ---
 
