@@ -1,0 +1,18 @@
+# Case-insensitive completion
+set completion-ignore-case on
+
+# Show all matches on first Tab instead of ringing bell
+set show-all-if-ambiguous on
+
+# Arrow keys search history based on already-typed prefix
+"\e[A": history-search-backward
+"\e[B": history-search-forward
+
+# Ctrl+Left / Ctrl+Right — jump word by word
+"\e[1;5C": forward-word
+"\e[1;5D": backward-word
+
+# Display completion matches sorted and colored
+set visible-stats on
+set colored-stats on
+set colored-completion-prefix on
