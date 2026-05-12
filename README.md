@@ -213,9 +213,11 @@ Available in interactive shell only (sourced via `bashrc.d/`). Cannot be called 
 
 Installed binaries (not custom scripts) live in `~/bin/` too. `lsbin` lists them separately under a **Binaries** section. They are detected by the absence of a shebang line.
 
-All CLI tools are managed by [pixi](https://pixi.sh) global installs — no system package manager needed:
+All CLI tools are managed by [pixi](https://pixi.sh) global installs — no system package manager needed.
 
-`starship` · `ripgrep` · `fd-find` · `fzf` · `zoxide` · `jq` · `bat` · `tree` · `gh` · `nvim` · `ruff` · `git-delta` · `typst` · `typst-lsp` · `plantuml` · `stylua` · `lazygit` · `restic` · `python 3.11`
+**Common (all machines):** `starship` · `ripgrep` · `fd-find` · `fzf` · `zoxide` · `jq` · `bat` · `tree` · `gh` · `nvim` · `ruff` · `git-delta` · `typst` · `typst-lsp` · `plantuml` · `stylua` · `lazygit` · `restic` · `tldr` · `python 3.11`
+
+
 
 ---
 
