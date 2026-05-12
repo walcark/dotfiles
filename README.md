@@ -201,6 +201,9 @@ Available in interactive shell only (sourced via `bashrc.d/`). Cannot be called 
 | | `lspath -r <entry> [VAR]` | Remove all occurrences of entry |
 | | `lspath -c [VAR]` | Remove non-existent directories and duplicates |
 | `mkcd` | `mkcd <dir>` | Create directory and cd into it |
+| `fdf` | `fdf [fd args]` | `fd` + `fzf` — fuzzy pick a file, outputs path to stdout |
+| `fdo` | `fdo [fd args]` | `fd` + `fzf` + open — pick a file and open with `xdg-open` |
+| | `fdo -o <program> [fd args]` | Open with a specific program instead |
 
 ---
 
