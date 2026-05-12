@@ -2,3 +2,13 @@
     type = "git-repo"
     url = "https://github.com/walcark/zk.git"
     refreshPeriod = "24h"
+
+[".config/kitty/themes/kovidgoyal-kitty-themes"]
+    type = "git-repo"
+    url = "https://github.com/kovidgoyal/kitty-themes.git"
+    refreshPeriod = "168h"
+
+[".config/kitty/themes/dexpota-kitty-themes"]
+    type = "git-repo"
+    url = "https://github.com/dexpota/kitty-themes.git"
+    refreshPeriod = "168h"
