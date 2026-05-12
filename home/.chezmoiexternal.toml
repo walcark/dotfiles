@@ -1,7 +1,12 @@
 ["submodules/zk"]
     type = "git-repo"
-    url = "https://github.com/walcark/zk.git"
+    url = "git@github.com:walcark/zk.git"
     refreshPeriod = "24h"
+
+[".config/nvim-configs"]
+    type = "git-repo"
+    url = "git@github.com:walcark/nvim-configs.git"
+    refreshPeriod = "168h"
 
 [".config/kitty/themes/kovidgoyal-kitty-themes"]
     type = "git-repo"

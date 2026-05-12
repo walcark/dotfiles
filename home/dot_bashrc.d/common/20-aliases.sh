@@ -35,11 +35,10 @@ alias gcb='git checkout -b'
 alias grh='git reset --hard HEAD'
 
 # Editor
-export NVIM_APPNAME="astro-nvim"
+export NVIM_APPNAME="nvim-configs/astro-nvim"
 export VISUAL=nvim
 export EDITOR=nvim
-alias vi='NVIM_APPNAME="astro-nvim" nvim'
-alias vik='NVIM_APPNAME="nvim-kickstart" nvim'
+alias vi='NVIM_APPNAME="nvim-configs/astro-nvim" nvim'
 
 # Chezmoi
 alias cm='chezmoi'
@@ -49,7 +48,7 @@ alias cmad='chezmoi add'
 alias cmap='chezmoi apply'
 alias cmt='chezmoi execute-template'
 alias cmtf='chezmoi execute-template -f'
-alias viconf='chezmoi cd ; cd home/private_dot_config/astro-nvim'
+alias viconf='cd ~/.config/nvim-configs/astro-nvim'
 
 # Tools
 alias kpxc='keepassxc-cli'
