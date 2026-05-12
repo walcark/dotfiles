@@ -204,6 +204,8 @@ Available in interactive shell only (sourced via `bashrc.d/`). Cannot be called 
 | `fdf` | `fdf [fd args]` | `fd` + `fzf` — fuzzy pick a file, outputs path to stdout |
 | `fdo` | `fdo [fd args]` | `fd` + `fzf` + open — pick a file and open with `xdg-open` |
 | | `fdo -o <program> [fd args]` | Open with a specific program instead |
+| `z` | `z <query>` | Jump to a frecent directory matching query (zoxide) |
+| `zi` | `zi` | Interactive directory jump with fzf (zoxide) |
 
 ---
 
@@ -213,7 +215,7 @@ Installed binaries (not custom scripts) live in `~/bin/` too. `lsbin` lists them
 
 All CLI tools are managed by [pixi](https://pixi.sh) global installs — no system package manager needed:
 
-`starship` · `ripgrep` · `fd-find` · `fzf` · `jq` · `bat` · `tree` · `gh` · `nvim` · `ruff` · `git-delta` · `typst` · `typst-lsp` · `plantuml` · `stylua` · `lazygit` · `restic` · `python 3.11`
+`starship` · `ripgrep` · `fd-find` · `fzf` · `zoxide` · `jq` · `bat` · `tree` · `gh` · `nvim` · `ruff` · `git-delta` · `typst` · `typst-lsp` · `plantuml` · `stylua` · `lazygit` · `restic` · `python 3.11`
 
 ---
 
