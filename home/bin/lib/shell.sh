@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Generic shell utilities — sourced by dot_init.sh and bin scripts
 
-function info()  { echo -e "\e[32m* ${*}\e[39m"; }
-function warn()  { echo -e "\e[33m* ${*}\e[39m"; }
-function error() { echo -e "\e[31m* ${*}\e[39m"; }
+function info()  { echo -e "\e[32m[INFO] ${*}\e[39m"; }
+function warn()  { echo -e "\e[33m[WARN] ${*}\e[39m"; }
+function error() { echo -e "\e[31m[ERROR] ${*}\e[39m"; }
 
 case "${OSTYPE}" in
     solaris*) OSNAME="SOLARIS"  ;;

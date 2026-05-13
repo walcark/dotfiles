@@ -2,35 +2,58 @@
 # Description: Extract any archive into a folder named after the archive
 set -euo pipefail
 
-if [ $# -ne 1 ]; then
-    echo "Usage: extract <archive>"
-    exit 1
-fi
+source "$HOME/bin/lib/shell.sh"
 
-file="$1"
-
-if [ ! -f "$file" ]; then
-    echo "Error: '$file' is not a file" >&2
+usage() {
+    error "Usage: extract <archive> [-n <name>] [-d <dir>]"
     exit 1
+}
+
+extract_name=""
+dest_parent="."
+
+# Handle optionnal arguments and get archive name
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -n) extract_name="$2"; shift 2 ;;
+        -d) dest_parent="$2";  shift 2 ;;
+        -*) usage ;;
+        *)
+            if [[ -z "${file:-}" ]]; then
+                file="$1"
+            else
+                usage
+            fi
+            shift
+            ;;
+    esac
+done
+
+# If mandatory archive file was not passed as argument
+if [[ -z "${file:-}" ]]; then
+    usage
 fi
 
 base=$(basename "$file")
 
+# Base destination name (without extension)
 case "$base" in
-    *.tar.bz2) destdir="${base%.tar.bz2}" ;;
-    *.tar.gz)  destdir="${base%.tar.gz}"  ;;
-    *.tar.xz)  destdir="${base%.tar.xz}"  ;;
-    *.tar.zst) destdir="${base%.tar.zst}" ;;
-    *.tar)     destdir="${base%.tar}"     ;;
-    *.bz2)     destdir="${base%.bz2}"     ;;
-    *.gz)      destdir="${base%.gz}"      ;;
-    *.zip)     destdir="${base%.zip}"     ;;
-    *.7z)      destdir="${base%.7z}"      ;;
-    *.rar)     destdir="${base%.rar}"     ;;
-    *.xz)      destdir="${base%.xz}"      ;;
-    *.zst)     destdir="${base%.zst}"     ;;
+    *.tar.bz2) default_name="${base%.tar.bz2}" ;;
+    *.tar.gz)  default_name="${base%.tar.gz}"  ;;
+    *.tar.xz)  default_name="${base%.tar.xz}"  ;;
+    *.tar.zst) default_name="${base%.tar.zst}" ;;
+    *.tar)     default_name="${base%.tar}"     ;;
+    *.bz2)     default_name="${base%.bz2}"     ;;
+    *.gz)      default_name="${base%.gz}"      ;;
+    *.zip)     default_name="${base%.zip}"     ;;
+    *.7z)      default_name="${base%.7z}"      ;;
+    *.rar)     default_name="${base%.rar}"     ;;
+    *.xz)      default_name="${base%.xz}"      ;;
+    *.zst)     default_name="${base%.zst}"     ;;
     *)         echo "Error: unknown format '${base##*.}'" >&2; exit 1 ;;
 esac
+
+destdir="${dest_parent}/${extract_name:-$default_name}"
 
 mkdir -p "$destdir"
 
@@ -48,3 +71,5 @@ case "$base" in
     *.xz)      unxz   -c "$file" > "$destdir/${base%.xz}"            ;;
     *.zst)     zstd -d "$file" -o "$destdir/${base%.zst}"            ;;
 esac
+
+info "Extracted archive $base to $destdir" 
