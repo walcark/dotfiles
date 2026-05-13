@@ -24,6 +24,7 @@ pixi global install \
     restic \
     zoxide \
     tldr \
+    tmux \
     python=3.11
 
 echo "[chezmoi] CLI installed via Pixi"
