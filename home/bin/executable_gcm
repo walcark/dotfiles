@@ -10,17 +10,13 @@ function choose_prefix() {
     "refactor   code change without bug fix or new user feature"
     "wip        work in progress"
     "style      change that do not affect the meaning of the code"
+    "chore      code maintenance (upgrade dependencies, change tools)"
     "docs       only change documentation"
     "perf       improves performance"
     "test       add or correct test"
     "ci         add or change of CI/CD file"
     "build      change that affect the build system / external dependencies"
-  )  
-
-  for item in "${items[@]}"
-  do
-    echo "$item"
-  done
+  )
 
   # Create fzf choice menu
   prefix=$(
@@ -30,7 +26,7 @@ function choose_prefix() {
       --layout=reverse \
       --border \
       --exit-0
-    ) 
+    )
 
   # Extract chosen prefix and launch commit
   if [[ -z $prefix ]]; then
@@ -39,7 +35,7 @@ function choose_prefix() {
   else
     prefix_only=$(echo $prefix | cut -d " " -f 1)
   fi
-  
+
   git commit -e -m "$prefix_only: "
 }
 
