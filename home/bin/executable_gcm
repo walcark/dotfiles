@@ -32,17 +32,15 @@ function choose_prefix() {
       --exit-0
     ) 
 
-  # Extract chosen prefix
+  # Extract chosen prefix and launch commit
   if [[ -z $prefix ]]; then
     echo "Nothing selected"
     return 0
   else
     prefix_only=$(echo $prefix | cut -d " " -f 1)
   fi
-
-  # Build output command
-  command="$(prefix_only): "
-  git commit -m "$(command)" --edit
+  
+  git commit -e -m "$prefix_only: "
 }
 
 choose_prefix
