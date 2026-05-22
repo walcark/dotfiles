@@ -18,3 +18,9 @@ fdo() {
     result=$(fd "$@" | fzf) || return 0
     [[ -n "$result" ]] && "$open_cmd" "$result"
 }
+
+if [ -f "$HOME/.config/nvim-configs/bin/utils.sh" ]; then
+    source $HOME/.config/nvim-configs/bin/utils.sh
+else
+    echo "Did not find file: $HOME/.config/nvim-configs/bin/utils.sh"
+fi

@@ -29,7 +29,7 @@ alias grh='git reset --hard HEAD'
 
 # Editor
 alias vi='NVIM_APPNAME="nvim-configs/astro-nvim" nvim'
-alias viconf='cd ~/.config/nvim-configs/astro-nvim'
+alias viconf='cd ~/.config/nvim-configs'
 
 # Chezmoi
 alias cm='chezmoi'
