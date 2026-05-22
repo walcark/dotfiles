@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Description: Git commit messages with prefix choice.
+set -euo pipefail
+
+# Create a fzf menu to choose from all the commit prefixes options.
+function choose_prefix() {
+  items=(
+    "feat       new user feature"
+    "fix        bug fix"
+    "refactor   code change without bug fix or new user feature"
+    "wip        work in progress"
+    "style      change that do not affect the meaning of the code"
+    "docs       only change documentation"
+    "perf       improves performance"
+    "test       add or correct test"
+    "ci         add or change of CI/CD file"
+    "build      change that affect the build system / external dependencies"
+  )  
+
+  for item in "${items[@]}"
+  do
+    echo "$item"
+  done
+
+  # Create fzf choice menu
+  prefix=$(
+    printf "%s\n" "${items[@]}" | fzf \
+      --prompt="Choose a commit prefix " \
+      --height=~50% \
+      --layout=reverse \
+      --border \
+      --exit-0
+    ) 
+
+  # Extract chosen prefix
+  if [[ -z $prefix ]]; then
+    echo "Nothing selected"
+    return 0
+  else
+    prefix_only=$(echo $prefix | cut -d " " -f 1)
+  fi
+
+  # Build output command
+  command="$(prefix_only): "
+  git commit -m "$(command)" --edit
+}
+
+choose_prefix
