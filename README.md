@@ -318,6 +318,12 @@ tmpl new <name>        # snapshots current directory, auto-pushes
 
 ## Roadmap
 
+- [ ] **CLI utilities** — improve the following terminal commands:
+  - [ ] note: to navigate my notes or search notes by tags, backed in `zk/notes`
+    - [ ] will encapsulate tuto by tagging tutorials
+  - [ ] tdl: todo-list, search by remaining time / importance / tags, backed in `zk/todo/`
+  - [ ] todo: list todo's in a current project
+  - [ ] capture: similar to org-mode capture mode, backed in `zk/capture/`
 - [ ] **Other shells** — Fish (native autocompletion, abbreviations), Zsh
 - [ ] **Tmux** — add config alongside WezTerm/Kitty for terminal multiplexing
 - [ ] **Neovim integration** — Telescope picker for `snip` and `:TmplUse` command, so snippets and templates are accessible directly from the editor without leaving neovim
@@ -326,7 +332,6 @@ tmpl new <name>        # snapshots current directory, auto-pushes
 - [ ] **Capture & TODO tool** — CLI tool for quick idea capture and task tracking inspired by org-mode (inbox capture, priorities, deadlines, agenda view), backed by `zk/capture/`
 - [ ] **KeePassXC secret management** — centralize all secret retrieval (tokens, passwords, API keys) through `keepassxc-cli` to avoid any plaintext secrets in dotfiles or environment variables
 - [ ] **KeePassXC install script** — `run_once_20-install-keepassxc.sh` has version `2.6.6` hardcoded; switch to `run_onchange_` with explicit version in filename so updates trigger a reinstall
-
 ---
 
 ## Chezmoi Cheatsheet
