@@ -18,18 +18,28 @@ while IFS= read -r -d '' f; do
     else
         binaries+=("$f")
     fi
-done < <(find "$bin_dir" -maxdepth 1 -type f -executable -print0 | sort -z)
+done < <(find "$bin_dir" -not -path "*/lib/*" -type f -executable -print0 | sort -z)
 
 max_len=0
 for f in "${scripts[@]}"; do
     name=$(basename "$f")
     len=${#name}
-    if [ "$len" -gt "$max_len" ]; then max_len=$len; fi
+    [ "$len" -gt "$max_len" ] && max_len=$len
 done
 
 if [ "${#scripts[@]}" -gt 0 ]; then
     printf "\033[1mScripts\033[0m\n"
+    prev_dir=""
     for f in "${scripts[@]}"; do
+        dir=$(dirname "$f")
+        subdir="${dir#"$bin_dir"}"
+        subdir="${subdir#/}"
+        if [ -n "$subdir" ] && [ "$dir" != "$prev_dir" ]; then
+            printf "\n  \033[2m[%s]\033[0m\n" "$subdir"
+            prev_dir="$dir"
+        elif [ -z "$subdir" ] && [ "$prev_dir" != "$bin_dir" ] && [ -n "$prev_dir" ]; then
+            prev_dir="$bin_dir"
+        fi
         name=$(basename "$f")
         desc=$(head -10 "$f" | grep -m1 '^# Description:' | sed 's/^# Description: *//' || true)
         [ -n "$desc" ] || desc="(no description)"

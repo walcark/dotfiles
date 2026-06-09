@@ -2,6 +2,7 @@
 # ZK shared utilities — sourced by tuto, note, snip, tmpl
 
 source "$HOME/bin/lib/shell.sh"
+source "$HOME/bin/lib/clipboard.sh"
 
 ZK_DIR="${ZK_DIR:-$HOME/submodules/zk}"
 
@@ -24,17 +25,7 @@ zk_show() {
 }
 
 zk_clipboard() {
-    local file="$1"
-    if command -v wl-copy &>/dev/null; then
-        wl-copy < "$file"
-    elif command -v xclip &>/dev/null; then
-        xclip -selection clipboard < "$file"
-    elif command -v pbcopy &>/dev/null; then
-        pbcopy < "$file"
-    else
-        error "No clipboard command found (wl-copy, xclip, pbcopy)"
-        return 1
-    fi
+    clipboard_copy < "$1"
 }
 
 zk_editor() {

@@ -12,6 +12,7 @@ restic backup \
     "$HOME/dev/" \
     "$HOME/bin/" \
     "$HOME/library/" \
+    "$HOME/submodules/zk/" \
     "$HOME/docs/" \
     --exclude-file "$HOME/.config/restic/exclude.txt" \
     --tag backup

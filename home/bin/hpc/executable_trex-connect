@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Description: Copy Trex password to clipboard and SSH into trex.cnes.fr
+set -euo pipefail
+
+source "$HOME/bin/lib/clipboard.sh"
+
+DB="${KEEPASS_DB:?KEEPASS_DB must be set in ~/.env.local}"
+
+keepassxc-cli show -s "$DB" "Server/Trex" | clipboard_copy
+echo "Password for Trex copied to clipboard for 15 seconds..."
+TERM=xterm-256color ssh -X walcark@trex.cnes.fr
+sleep 15
+clipboard_copy < /dev/null

@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Description: Start an interactive SLURM session on a GPU node
+set -euo pipefail
+
+usage() {
+    echo "Usage: sinter <gpu> <hours>"
+    echo "  gpu:   a100 | v100"
+    echo "  hours: 1-99"
+    exit 1
+}
+
+[ $# -ne 2 ] && usage
+
+GPU="$1"
+HOURS="$2"
+
+[[ "$HOURS" =~ ^[0-9]+$ ]] || { echo "Error: hours must be an integer." >&2; exit 1; }
+[ "$HOURS" -ge 1 ] && [ "$HOURS" -le 99 ] || { echo "Error: hours must be between 1 and 99." >&2; exit 1; }
+
+case "$GPU" in
+    a100) PARTITION="gpu_a100"; QOS="gpu_all" ;;
+    v100) PARTITION="gpu_v100"; QOS="gpu_all" ;;
+    *) echo "Error: unknown gpu '$GPU' (a100|v100)" >&2; exit 1 ;;
+esac
+
+TIME_FMT=$(printf "%02d:00:00" "$HOURS")
+ACCOUNT="${SLURM_ACCOUNT:?SLURM_ACCOUNT must be set in ~/.env.local}"
+
+echo "Launching sinter job: $GPU for ${TIME_FMT} ..."
+
+unset SLURM_JOB_ID
+srun \
+    -A "$ACCOUNT" \
+    -N 1 \
+    -c 16 \
+    --mem-per-cpu=7160M \
+    --gres="gpu:1" \
+    --partition="$PARTITION" \
+    --qos="$QOS" \
+    --time="$TIME_FMT" \
+    --x11 \
+    --pty bash
