@@ -1,26 +1,18 @@
 #!/usr/bin/env bash
 # Description: Backup home folders to restic repository via KeePassXC credentials
 
-# Load restic credentials from ~/.env.local
-# Expected variables: RESTIC_REPOSITORY, RESTIC_PASSWORD
-if [[ -f "$HOME/.env.local" ]]; then
-    source "$HOME/.env.local"
-fi
+source "$HOME/bin/lib/keepass.sh"
 
-if [[ -z "${RESTIC_REPOSITORY:-}" || -z "${RESTIC_PASSWORD:-}" ]]; then
-    echo "Error: RESTIC_REPOSITORY and RESTIC_PASSWORD must be set in ~/.env.local" >&2
-    exit 1
-fi
+export RESTIC_REPOSITORY="$HOME/$(get_keepass_username "Restic")"
+export RESTIC_PASSWORD="$(get_keepass_password "Restic")"
 
-export RESTIC_REPOSITORY RESTIC_PASSWORD
+echo $RESTIC_PASSWORD
 
 restic backup \
     "$HOME/dev/" \
     "$HOME/bin/" \
     "$HOME/library/" \
-    "$HOME/zk/" \
     "$HOME/docs/" \
-    "$HOME/submodules/" \
     --exclude-file "$HOME/.config/restic/exclude.txt" \
     --tag backup
 
