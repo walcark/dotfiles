@@ -1,17 +1,23 @@
-{{- $type     := promptStringOnce . "machine.type"   "Machine type (client/server)"                   "client" -}}
-{{- $distro   := promptStringOnce . "machine.distro" "Distro (ubuntu/arch)"                           "ubuntu" -}}
-{{- $pixiHome := promptStringOnce . "pixi.home"      "Pixi home dir (vide = ~/.pixi)"                 ""       -}}
-{{- $email    := promptStringOnce . "git.email"      "Git email"                        "kevin.walcarius@gmail.com" -}}
+{{- $distro   := promptStringOnce . "machine.distro" "Distro (ubuntu/arch)"   "ubuntu" -}}
+{{- $pixiHome := promptStringOnce . "pixi.home"      "Pixi home dir (vide = ~/.pixi)" "" -}}
+{{- $email    := promptStringOnce . "git.email"      "Git email" "kevin.walcarius@gmail.com" -}}
+{{- $dev      := promptBoolOnce   . "features.dev"   "Feature: dev (editor, dev tools)"  true -}}
+{{- $hpc      := promptBoolOnce   . "features.hpc"   "Feature: hpc (SLURM, cluster)"     false -}}
 
 [edit]
     command = "vi"
 
 [data.machine]
-    type     = {{ $type | quote }}
     distro   = {{ $distro | quote }}
     hostname = {{ .chezmoi.hostname | quote }}
-    isClient = {{ eq $type "client" }}
-    isServer = {{ eq $type "server" }}
+
+[data.features]
+    dev     = {{ $dev }}
+    hpc     = {{ $hpc }}
+    gnome   = false
+    gaming  = false
+    drawing = false
+    proxmox = false
 
 [data.pixi]
     home = {{ if $pixiHome }}{{ $pixiHome | quote }}{{ else }}{{ joinPath .chezmoi.homeDir ".pixi" | quote }}{{ end }}
