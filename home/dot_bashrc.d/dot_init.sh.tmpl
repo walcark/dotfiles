@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 
 # Machine profile — baked in by chezmoi at apply time
-MACHINE_TYPE="{{ .machine.type }}"
 MACHINE_DISTRO="{{ .machine.distro }}"
 
-# Generic utilities (info/warn/error/OSNAME) — fallback if lib not deployed yet
+# Generic utilities (info/warn/error) — fallback if lib not deployed yet
 if [[ -f "$HOME/bin/lib/shell.sh" ]]; then
     source "$HOME/bin/lib/shell.sh"
 else
@@ -23,13 +22,15 @@ function source_dir() {
 
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd )"
 
-source_dir "$THIS_DIR/common"
-source_dir "$THIS_DIR/${MACHINE_TYPE}"
+source_dir "$THIS_DIR/core"
 
-if [[ "$MACHINE_TYPE" == "client" ]]; then
-    source_dir "$THIS_DIR/client/${MACHINE_DISTRO}"
-elif [[ "$MACHINE_TYPE" == "server" ]]; then
-    case "$(hostname -s)" in
-        trex*) source_dir "$THIS_DIR/server/trex" ;;
-    esac
-fi
+{{ if .features.dev -}}
+source_dir "$THIS_DIR/dev"
+{{ end -}}
+
+{{ if .features.hpc -}}
+source_dir "$THIS_DIR/hpc"
+case "$(hostname -s)" in
+    trex*) source_dir "$THIS_DIR/hpc/trex" ;;
+esac
+{{ end -}}

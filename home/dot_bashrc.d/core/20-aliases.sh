@@ -33,11 +33,6 @@ alias gco='git checkout'
 alias gcb='git checkout -b'
 alias grh='git reset --hard HEAD'
 
-# Editor
-export NVIM_APPNAME="nvim-configs/astro-nvim"
-export VISUAL=nvim
-export EDITOR=nvim
-
 # Chezmoi
 alias cm='chezmoi'
 alias cmcd='chezmoi cd'

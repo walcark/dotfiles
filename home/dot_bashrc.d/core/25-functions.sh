@@ -19,8 +19,3 @@ fdo() {
     [[ -n "$result" ]] && "$open_cmd" "$result"
 }
 
-if [ -f "$HOME/.config/nvim-configs/bin/utils" ]; then
-    source "$HOME/.config/nvim-configs/bin/utils"
-else
-    echo "Did not find file: $HOME/.config/nvim-configs/bin/utils"
-fi
