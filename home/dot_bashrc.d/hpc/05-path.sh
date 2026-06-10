@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-lspath -a "$HOME/bin/hpc"
+[ -d "$HOME/bin/hpc" ] && PATH="$HOME/bin/hpc:$PATH"
+export PATH
