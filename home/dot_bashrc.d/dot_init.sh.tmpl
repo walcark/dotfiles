@@ -30,7 +30,4 @@ source_dir "$THIS_DIR/dev"
 
 {{ if .features.hpc -}}
 source_dir "$THIS_DIR/hpc"
-case "$(hostname -s)" in
-    trex*) source_dir "$THIS_DIR/hpc/trex" ;;
-esac
 {{ end -}}
