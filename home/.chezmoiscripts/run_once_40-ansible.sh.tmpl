@@ -18,6 +18,8 @@ if ! command -v pipx &>/dev/null; then
     sudo apt-get install -y pipx
 {{ else if eq .machine.distro "arch" -}}
     sudo pacman -S --noconfirm python-pipx
+{{ else if eq .machine.distro "fedora" -}}
+    sudo dnf install -y pipx
 {{ else -}}
     python3 -m pip install --user pipx
 {{ end -}}
