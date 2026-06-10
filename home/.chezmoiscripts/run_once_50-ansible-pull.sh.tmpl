@@ -27,6 +27,7 @@ ansible-pull \
     --directory "$HOME/.ansible/pull" \
     --inventory "localhost," \
     --connection local \
+    --ask-become-pass \
     --tags "$TAGS" \
     ansible/playbook.yml
 
