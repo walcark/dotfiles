@@ -1,0 +1,2 @@
+- import_tasks: extension_manager.yml
+- import_tasks: thunderbird.yml

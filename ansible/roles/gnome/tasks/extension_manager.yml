@@ -1,0 +1,4 @@
+- name: Install GNOME Extension Manager
+  community.general.flatpak:
+    name: com.mattjakeman.ExtensionManager
+    state: latest
