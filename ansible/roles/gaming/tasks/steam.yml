@@ -1,0 +1,4 @@
+- name: Install lastest version of Steam
+  community.general.flatpak:
+    name: com.valvesoftware.Steam
+    state: latest

@@ -1,0 +1,4 @@
+- name: Install lastest version of Lutris
+  community.general.flatpak:
+    name: net.lutris.Lutris
+    state: latest

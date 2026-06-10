@@ -1,0 +1,4 @@
+- name: Install lastest version of Discord
+  community.general.flatpak:
+    name: com.discordapp.Discord
+    state: latest
