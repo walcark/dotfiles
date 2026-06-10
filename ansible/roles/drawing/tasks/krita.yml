@@ -1,0 +1,4 @@
+- name: Install lastest version of Krita
+  community.general.flatpak:
+    name: org.kde.krita
+    state: latest
