@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+# Description: Capture and manage tasks per machine in ~/submodules/zk/tdl/
+set -euo pipefail
+
+ZK_DIR="${ZK_DIR:-$HOME/submodules/zk}"
+TDL_DIR="$ZK_DIR/tdl"
+TDL_FILE="$TDL_DIR/$(hostname -s).md"
+
+OPEN="☐" STARTED="◑" DONE="✔"
+TS="$(date +'%Y·%m·%d')"
+DIM=$'\e[2m' YELLOW=$'\e[33m' RESET=$'\e[0m'
+
+mkdir -p "$TDL_DIR"
+[[ -f "$TDL_FILE" ]] || touch "$TDL_FILE"
+
+# --- Internals ---
+
+_pending() {
+    grep -E "^[${OPEN}${STARTED}] " "$TDL_FILE" 2>/dev/null || true
+}
+
+# Replace or delete a line (empty new = delete)
+_replace() {
+    local old="$1" new="$2" tmp
+    tmp=$(mktemp)
+    if [[ -z "$new" ]]; then
+        grep -vxF "$old" "$TDL_FILE" > "$tmp" || true
+    else
+        OLD="$old" NEW="$new" awk \
+            '$0 == ENVIRON["OLD"] { print ENVIRON["NEW"]; next } { print }' \
+            "$TDL_FILE" > "$tmp"
+    fi
+    mv "$tmp" "$TDL_FILE"
+}
+
+_colorize() {
+    sed \
+        -e "s/^${STARTED} /${YELLOW}${STARTED}${RESET} /" \
+        -e "s/ · [^ ]*$/${DIM}&${RESET}/"
+}
+
+_fzf_pending() {
+    _pending | fzf --height=70% --layout=reverse --border "$@" || true
+}
+
+# --- Commands ---
+
+_tdl_pick() {
+    local result key selected
+    result=$(_pending | fzf \
+        --height=70% --layout=reverse --border \
+        --header="tdl — enter:done  ctrl-s:start  ctrl-d:delete  ctrl-n:new" \
+        --expect=ctrl-s,ctrl-d,ctrl-n) || return 0
+
+    IFS=$'\n' read -r key selected <<< "$result"
+
+    if [[ -z "$selected" ]]; then
+        [[ "$key" == "ctrl-n" ]] || return 0
+        read -rp "New task: " text
+        [[ -n "$text" ]] && _tdl_add "$text"
+        return 0
+    fi
+
+    case "$key" in
+        ctrl-s)
+            [[ "$selected" == "${OPEN}"* ]] || return 0
+            _replace "$selected" "${STARTED} ${selected#"${OPEN} "}"
+            ;;
+        ctrl-d)
+            read -rp "Delete '${selected}'? [y/N] " c
+            [[ "$c" =~ ^[Yy]$ ]] || return 0
+            _replace "$selected" ""
+            ;;
+        ctrl-n)
+            read -rp "New task: " text
+            [[ -n "$text" ]] && _tdl_add "$text"
+            ;;
+        *)
+            local text="${selected#"${OPEN} "}"; text="${text#"${STARTED} "}"
+            _replace "$selected" "${DONE} ${text} ⚡${TS}"
+            ;;
+    esac
+}
+
+_tdl_add() {
+    printf '%s %s · %s\n' "$OPEN" "$*" "$TS" >> "$TDL_FILE"
+}
+
+_tdl_list() {
+    if [[ "${1:-}" == "--all" ]]; then
+        local f machine count
+        for f in "$TDL_DIR"/*.md; do
+            [[ -f "$f" ]] || continue
+            machine=$(basename "$f" .md)
+            count=$(grep -cE "^[${OPEN}${STARTED}] " "$f" 2>/dev/null || echo 0)
+            [[ "$count" -gt 0 ]] || continue
+            printf "${RESET}\033[1m── %s\033[0m\n" "$machine"
+            grep -E "^[${OPEN}${STARTED}] " "$f" | _colorize
+            echo
+        done
+    else
+        local out
+        out=$(_pending | _colorize)
+        [[ -n "$out" ]] && echo "$out" || echo "(no pending tasks)"
+    fi
+}
+
+_tdl_done() {
+    local selected
+    selected=$(_fzf_pending --header="mark done") || return 0
+    [[ -n "$selected" ]] || return 0
+    local text="${selected#"${OPEN} "}"; text="${text#"${STARTED} "}"
+    _replace "$selected" "${DONE} ${text} ⚡${TS}"
+}
+
+_tdl_start() {
+    local selected
+    selected=$(grep -E "^${OPEN} " "$TDL_FILE" 2>/dev/null \
+        | fzf --height=70% --layout=reverse --border --header="mark started") || return 0
+    [[ -n "$selected" ]] || return 0
+    _replace "$selected" "${STARTED} ${selected#"${OPEN} "}"
+}
+
+_tdl_sync() {
+    git -C "$ZK_DIR" add "$TDL_DIR/"
+    git -C "$ZK_DIR" commit -m "tdl: sync $(hostname -s) $TS" || true
+    git -C "$ZK_DIR" push
+}
+
+_usage() {
+    cat <<EOF
+tdl — task capture per machine ($(hostname -s))
+
+Usage: tdl [text...]        capture  (no args → fzf picker)
+       tdl list [--all]     list pending tasks (all machines with --all)
+       tdl done             mark done via fzf
+       tdl start            mark started via fzf
+       tdl edit             open task file in \$EDITOR
+       tdl sync             git push tdl/ to ZK repo
+EOF
+    exit 1
+}
+
+# --- Entry point ---
+# If first arg is not a known subcommand, treat entire $@ as task text
+
+case "${1:-}" in
+    "")     _tdl_pick ;;
+    list)   shift; _tdl_list "$@" ;;
+    done)   _tdl_done ;;
+    start)  _tdl_start ;;
+    edit)   ${EDITOR:-nvim} "$TDL_FILE" ;;
+    sync)   _tdl_sync ;;
+    -h|--help|help) _usage ;;
+    *)      _tdl_add "$@" ;;
+esac
