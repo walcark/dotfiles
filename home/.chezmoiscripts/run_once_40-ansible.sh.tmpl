@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+{{ if not .features.admin -}}
+echo "[chezmoi] Skipping Ansible install (features.admin=false)."
+exit 0
+{{ end -}}
+
 if command -v ansible-pull &>/dev/null; then
     echo "[chezmoi] Ansible already installed, skipping."
     exit 0

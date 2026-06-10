@@ -3,6 +3,7 @@
 {{- $email    := promptStringOnce . "git.email"      "Git email" "kevin.walcarius@gmail.com" -}}
 {{- $dev      := promptBoolOnce   . "features.dev"   "Feature: dev (editor, dev tools)"  true -}}
 {{- $hpc      := promptBoolOnce   . "features.hpc"   "Feature: hpc (SLURM, cluster)"     false -}}
+{{- $admin    := promptBoolOnce   . "features.admin" "Feature: admin (sudo, ansible)"     false -}}
 
 [edit]
     command = "vi"
@@ -14,6 +15,7 @@
 [data.features]
     dev     = {{ $dev }}
     hpc     = {{ $hpc }}
+    admin   = {{ $admin }}
     gnome   = false
     gaming  = false
     drawing = false

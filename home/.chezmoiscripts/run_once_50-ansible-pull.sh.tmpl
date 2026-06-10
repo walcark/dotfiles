@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+{{ if not .features.admin -}}
+echo "[chezmoi] Skipping ansible-pull (features.admin=false)."
+exit 0
+{{ end -}}
+
 if ! command -v ansible-pull &>/dev/null; then
     echo "[chezmoi] ansible-pull not found, skipping. (run_once_40 may have failed)"
     exit 0
