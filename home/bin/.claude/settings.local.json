@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(todo *)",
-      "Bash(chezmoi apply *)"
-    ]
-  }
-}

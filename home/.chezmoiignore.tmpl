@@ -7,10 +7,3 @@
 bin/hpc
 {{ end -}}
 
-{{ if ne .machine.distro "ubuntu" -}}
-.bashrc.d/core/ubuntu
-{{ end -}}
-
-{{ if ne .machine.distro "arch" -}}
-.bashrc.d/core/arch
-{{ end -}}

@@ -24,10 +24,3 @@ export HISTSIZE=10000
 export HISTFILESIZE=${HISTSIZE}
 export HISTCONTROL=ignoreboth
 
-# Hand off to fish if available (interactive sessions only)
-if command -v fish >/dev/null 2>&1 && [[ $- == *i* ]]; then
-    #exec fish
-    echo "Fish to delete."
-	#TODO: Decide what to do with fish.
-fi
-
