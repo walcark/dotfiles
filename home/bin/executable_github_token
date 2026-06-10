@@ -1,15 +1,7 @@
 #!/usr/bin/env bash
 # Description: Copy GitHub token from KeePassXC to clipboard
 
-source "$HOME/bin/lib/clipboard.sh"
+source "$HOME/bin/lib/keepass.sh"
 
-DB="${KEEPASS_DB:?KEEPASS_DB must be set in ~/.env.local}"
-ENTRY="Tokens/Github"
-
-if ! command -v keepassxc-cli >/dev/null; then
-    echo "keepassxc-cli not found" >&2
-    exit 1
-fi
-
-keepassxc-cli show -s "$DB" "$ENTRY" | clipboard_copy
+copy_keepass_password "Tokens/Github"
 echo "GitHub token copied to clipboard."
