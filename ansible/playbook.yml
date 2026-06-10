@@ -1,5 +1,10 @@
----
 - hosts: localhost
-  connection: local
   become: true
-  roles: []
+  roles:
+    - core
+
+    - role: gnome
+      when: layers.gnome
+
+    - role: gaming
+      when: layers.gaming
