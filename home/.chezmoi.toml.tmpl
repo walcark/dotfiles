@@ -1,4 +1,4 @@
-{{- $distro   := promptStringOnce . "machine.distro" "Distro (ubuntu/arch)"   "ubuntu" -}}
+{{- $distro   := promptStringOnce . "machine.distro" "Distro (ubuntu/arch/fedora)"   "ubuntu" -}}
 {{- $pixiHome := promptStringOnce . "pixi.home"      "Pixi home dir (vide = ~/.pixi)" "" -}}
 {{- $email    := promptStringOnce . "git.email"      "Git email" "kevin.walcarius@gmail.com" -}}
 {{- $dev      := promptBoolOnce   . "features.dev"   "Feature: dev (editor, dev tools)"  true -}}
