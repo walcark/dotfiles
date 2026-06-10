@@ -1,0 +1,7 @@
+layers:
+  gnome: true
+  gaming: true
+  drawing: false
+  hpc: false
+  dev: true
+  homelab: false
