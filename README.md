@@ -2,12 +2,17 @@
 
 <p align="center">
   <a href="https://www.chezmoi.io">
-    <img src="https://img.shields.io/badge/managed%20with-chezmoi-blue?logo=chezmoi">
+    <img src="https://img.shields.io/badge/Managed%20with-chezmoi-blue?logo=chezmoi">
   </a>
+
   <a href="https://pixi.sh">
     <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json">
   </a>
+
+  <img src="https://img.shields.io/badge/Bootstrapped%20with-Ansible-EE0000?logo=ansible&logoColor=white">
+
   <img src="https://img.shields.io/badge/platform-linux-orange?logo=linux&logoColor=white">
+
   <img src="https://img.shields.io/github/last-commit/walcark/dotfiles">
 </p>
 
