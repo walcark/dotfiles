@@ -1,1 +1,1 @@
-- require_tasks: kitty.yml
+- import_tasks: kitty.yml
