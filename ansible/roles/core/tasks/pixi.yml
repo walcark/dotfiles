@@ -1,0 +1,9 @@
+# The play runs with become: true, but pixi is strictly user-space:
+# hence become: false, and HOME resolved via lookup (ansible_env.HOME
+# would be /root since facts are gathered with become).
+- name: Install core pixi global tools
+  ansible.builtin.command:
+    cmd: "{{ lookup('env', 'HOME') }}/.pixi/bin/pixi global install {{ item }}"
+    creates: "{{ lookup('env', 'HOME') }}/.pixi/envs/{{ item.split('=') | first }}"
+  loop: "{{ core_pixi_tools }}"
+  become: false

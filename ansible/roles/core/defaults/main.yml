@@ -1,0 +1,21 @@
+# Pixi tools installed on EVERY machine.
+# Ownership rule: any binary referenced by home/dot_bashrc.d/core or
+# dot_gitconfig must be listed here (chezmoi applies those files everywhere).
+
+dotfiles_url: "https://github.com/walcark/dotfiles.git"
+dotfiles_branch: "main"
+
+core_pixi_tools:
+  - starship      # prompt (bashrc.d/core/42)
+  - zoxide        # smart cd (bashrc.d/core/47)
+  - bat           # better cat (bashrc.d/core/45)
+  - fzf           # fuzzy finder (bashrc.d/core/44)
+  - ripgrep       # grep (bashrc.d/core/46)
+  - fd-find
+  - git-delta     # diff pager (gitconfig)
+  - jq
+  - tree
+  - tldr
+  - tmux
+  - gh
+  - restic        # backups

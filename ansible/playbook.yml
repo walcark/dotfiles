@@ -8,3 +8,6 @@
 
     - role: gaming
       when: layers.gaming
+
+    - role: dev
+      when: layers.dev

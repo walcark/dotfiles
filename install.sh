@@ -1,54 +1,51 @@
 #!/usr/bin/env bash
+# 
+# Bootstrap a new machine. Usage:
+#   bash <(curl -fsSL https://raw.githubusercontent.com/walcark/dotfiles/main/install.sh)
+#
+# During the reorganization of the dotfiles, the command becomes the following:
+#   DOTFILES_BRANCH=reorganize bash <(curl -fsSL https://raw.githubusercontent.com/walcark/dotfiles/main/install.sh)
 
 set -Eeuo pipefail
 
-
-function get_os_type() {
-  uname
-}
-
-
-function install_chezmoi() {
-  echo "Installing chezmoi locally..."
-  }
+# Dotfiles location and branch
+DOTFILES_URL="${DOTFILES_URL:-https://github.com/walcark/dotfiles.git}"
+DOTFILES_BRANCH="${DOTFILES_BRANCH:-main}"
+PULL_DIR="$HOME/.ansible/pull"
 
 
-function setup_chezmoi_linux() {
-  local bin_dir="$HOME/.local/bin"
+log() { printf '\n[Dotfiles Bootstrap] %s\n' "$*"; }
 
-  if CHEZMOI_PATH=$(command -v chezmoi); then
-    echo "Chezmoi exists on the OS."
-    export PATH="$(CHEZMOI_PATH):$PATH"
-  else
-    echo "Chezmoi does not exist on the OS. Installing..."
-    sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$bin_dir"
-    export PATH="$(command -v chezmoi):$PATH"
-  fi
+# ansible-pull asks for sudo on stdin, a real terminal is thus required
+if [ ! -t 0 ]; then
+  exec </dev/tty 2>/dev/null \
+      || { log "stdin is not a terminal, please use: bash <(curl -fsSL ...)" >&2; exit 1; }
+fi
 
-  local chezmoi_cmd="${bin_dir}/chezmoi"
-  
-  # Run chezmoi init
-  "${chezmoi_cmd}" init "${DOTFILE_REPO_URL}" \
-    --force \
-    --branch ""
+# 1. Install pixi - user space based - no sudo required
+if ! command -v pixi >/dev/null 2>&1; then
+  log "Installing pixi..."
+  curl -fsSL https://pixi.sh/install.sh | bash
+fi
+export PATH="$HOME/.pixi/bin:$PATH"
 
+# 2. Install ansible / chezmoi and git via pixi
+log "Installing ansible, chezmoi and git via pixi..."
+pixi global install ansible chezmoi git
 
-}
+# 3. Full convergence — everything else lives in the playbook.
+# The -e overrides propagate URL/branch to the chezmoi task in roles/core,
+# so a bootstrap from a test branch is consistent end to end.
+log "Converge to required state with ansible-pull (branch: ${DOTFILES_BRANCH})..."
+ansible-pull \
+  --url "$DOTFILES_URL" \
+  --checkout "$DOTFILES_BRANCH" \
+  --directory "$PULL_DIR" \
+  --inventory "$PULL_DIR/ansible/inventory.ini" \
+  --ask-become-pass \
+  -e "dotfiles_url=$DOTFILES_URL" \
+  -e "dotfiles_branch=$DOTFILES_BRANCH" \
+  ansible/playbook.yml
 
-
-function setup_chezmoi() {
-  local ostype 
-  ostype=$(get_os_type)
-
-  if [ "$ostype" == "Linux" ]; then
-    setup_chezmoi_linux
-  else
-    echo "Invalid OS type: ${ostype}" >&2
-    exit 1
-  fi
-}
-
-
-function run_chezmoi() {
-  local bin_dir=
-}
+log "Finished."
+log "Usage: chezmoi apply for dotfiles - ansible-pull for the environment."

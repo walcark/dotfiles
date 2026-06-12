@@ -1,0 +1,8 @@
+# Same pattern as roles/core/tasks/pixi.yml (deliberately duplicated:
+# no shared "utils" role, see README rules).
+- name: Install dev pixi global tools
+  ansible.builtin.command:
+    cmd: "{{ lookup('env', 'HOME') }}/.pixi/bin/pixi global install {{ item }}"
+    creates: "{{ lookup('env', 'HOME') }}/.pixi/envs/{{ item.split('=') | first }}"
+  loop: "{{ dev_pixi_tools }}"
+  become: false

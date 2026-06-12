@@ -1,0 +1,31 @@
+# Pixi tools for development machines (layers.dev).
+dev_pixi_tools:
+  # Editor and daily drivers
+  - nvim
+  - lazygit
+  - python=3.11
+
+  # Language support for the nvim config (LSP servers, linters, formatters).
+  # All verified available on conda-forge. Not on conda-forge, handled by
+  # dedicated tasks: @ansible/ansible-language-server (npm), hadolint (static).
+  - ruff                                  # Python lint + format
+  - basedpyright                          # Python LSP
+  - gopls                                 # Go LSP
+  - lua-language-server                   # Lua LSP
+  - stylua                                # Lua format
+  - clang-tools                           # clangd, clang-format
+  - bash-language-server
+  - shellcheck                            # Bash lint (driven by bash-ls)
+  - go-shfmt                              # Bash format (driven by bash-ls)
+  - yaml-language-server                  # YAML / GitHub Actions
+  - actionlint                            # GitHub Actions lint
+  - dockerfile-language-server-nodejs
+  - ansible-lint                          # driven by ansible-language-server
+  - marksman                              # Markdown LSP
+  - mdformat                              # Markdown format
+  - nodejs                                # runtime for npm-only LSP servers
+
+  # Documents
+  - typst
+  - tinymist                              # Typst LSP (typst-lsp successor)
+  - plantuml
