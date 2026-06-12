@@ -1,4 +1,5 @@
 layers:
+  desktop: true
   gnome: true
   gaming: true
   drawing: false

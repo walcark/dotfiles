@@ -3,6 +3,9 @@
   roles:
     - core
 
+    - role: desktop
+      when: layers.desktop
+
     - role: gnome
       when: layers.gnome
 
@@ -11,3 +14,4 @@
 
     - role: dev
       when: layers.dev
+
