@@ -3,12 +3,6 @@
     url = "git@github.com:walcark/zk.git"
     refreshPeriod = "24h"
 
-[".config/nvim-configs"]
-    type = "git-repo"
-    url = "git@github.com:walcark/nvim-configs.git"
-    refreshPeriod = "168h"
-    recurseSubmodules = true
-
 [".local/bin/glow"]
     type = "archive-file"
     url = "https://github.com/charmbracelet/glow/releases/download/v{{ .versions.glow }}/glow_{{ .versions.glow }}_Linux_x86_64.tar.gz"

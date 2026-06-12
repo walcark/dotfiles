@@ -1,0 +1,43 @@
+# Neovim configurations: clone the working repo, then install the language
+# stack it declares in its own tools.yml (single source of truth — adding
+# a language server is one commit in the nvim repo, nothing to change here).
+- name: Clone neovim configurations repo
+  ansible.builtin.git:
+    repo: "{{ nvim_config_repo }}"
+    dest: "{{ lookup('env', 'HOME') }}/.config/nvim-configs"
+    recursive: true
+    # Working repo: ensure it exists, then never touch it again
+    update: false
+  become: false
+
+- name: Load nvim tools manifest
+  ansible.builtin.include_vars:
+    file: "{{ lookup('env', 'HOME') }}/.config/nvim-configs/mini-nvim/tools.yml"
+    name: nvim_tools
+
+- name: Install nvim language stack via pixi
+  ansible.builtin.include_role:
+    name: core
+    tasks_from: pixi
+  vars:
+    pixi_tools: "{{ nvim_tools.pixi }}"
+
+# npm -g would land inside the pixi nodejs env, off PATH: prefix to ~/.local
+- name: Install npm-only language servers
+  ansible.builtin.command:
+    cmd: >-
+      {{ lookup('env', 'HOME') }}/.pixi/bin/npm install -g
+      --prefix {{ lookup('env', 'HOME') }}/.local {{ item.package }}
+    creates: "{{ lookup('env', 'HOME') }}/.local/bin/{{ item.bin }}"
+  loop: "{{ nvim_tools.npm }}"
+  become: false
+
+- name: Install static binaries
+  ansible.builtin.get_url:
+    url: "{{ item.value.url | replace('{version}', item.value.version) }}"
+    dest: "{{ lookup('env', 'HOME') }}/.local/bin/{{ item.value.bin }}"
+    mode: "0755"
+  loop: "{{ nvim_tools.static | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  become: false

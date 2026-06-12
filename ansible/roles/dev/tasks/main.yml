@@ -1,1 +1,8 @@
-- import_tasks: pixi.yml
+- name: Install dev pixi global tools
+  ansible.builtin.include_role:
+    name: core
+    tasks_from: pixi
+  vars:
+    pixi_tools: "{{ dev_pixi_tools }}"
+
+- import_tasks: nvim.yml
