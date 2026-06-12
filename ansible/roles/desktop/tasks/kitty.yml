@@ -1,10 +1,12 @@
+# Read-only theme repos: no update once cloned, no become (user-space).
 - name: Install kovidgoyal kitty themes
   ansible.builtin.git:
     repo: "https://github.com/kovidgoyal/kitty-themes.git"
-    dest: {{ lookup('env', 'HOME') }}/.config/kitty/themes/kovidgoyal-kitty-themes
+    dest: "{{ lookup('env', 'HOME') }}/.config/kitty/themes/kovidgoyal-kitty-themes"
+  become: false
 
 - name: Install dexpota kitty themes
   ansible.builtin.git:
     repo: "https://github.com/dexpota/kitty-themes.git"
-    dest: {{ lookup('env', 'HOME') }}/.config/kitty/themes/dexpota-kitty-themes
-
+    dest: "{{ lookup('env', 'HOME') }}/.config/kitty/themes/dexpota-kitty-themes"
+  become: false
