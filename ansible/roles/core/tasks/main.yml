@@ -3,3 +3,5 @@
     pixi_tools: "{{ core_pixi_tools }}"
 
 - import_tasks: flatpak.yml
+- import_tasks: chezmoi.yml
+- import_tasks: zk.yml
