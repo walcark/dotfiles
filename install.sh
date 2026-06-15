@@ -50,7 +50,6 @@ ansible-pull \
   --checkout "$DOTFILES_BRANCH" \
   --directory "$PULL_DIR" \
   --inventory "$PULL_DIR/ansible/inventory.ini" \
-  --ask-become-pass \
   -e "dotfiles_url=$DOTFILES_URL" \
   -e "dotfiles_branch=$DOTFILES_BRANCH" \
   ansible/playbook.yml

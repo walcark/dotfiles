@@ -2,3 +2,4 @@
   community.general.flatpak:
     name: org.kde.krita
     state: latest
+    method: user

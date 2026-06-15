@@ -2,3 +2,4 @@
   community.general.flatpak:
     name: com.valvesoftware.Steam
     state: latest
+    method: user

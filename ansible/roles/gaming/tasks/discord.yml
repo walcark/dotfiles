@@ -2,3 +2,4 @@
   community.general.flatpak:
     name: com.discordapp.Discord
     state: latest
+    method: user

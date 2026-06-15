@@ -2,3 +2,4 @@
   community.general.flatpak:
     name: net.lutris.Lutris
     state: latest
+    method: user

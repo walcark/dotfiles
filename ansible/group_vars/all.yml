@@ -1,6 +1,6 @@
 layers:
   desktop: true
-  gnome: true
+  gnome: false
   gaming: true
   drawing: false
   hpc: false

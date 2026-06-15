@@ -1,6 +1,6 @@
 - name: Clone the zettelkasten repository
   ansible.builtin.git:
     repo: "git@github.com:walcark/zk.git"
-    dest: "{{ lookup('env', 'HOME') }}/submodules/zk"
+    dest: "{{ ansible_user_dir }}/submodules/zk"
     update: false
   become: false
