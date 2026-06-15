@@ -3,6 +3,6 @@
 # allowed cross-role dependency, this is not a "utils" role in disguise.
 - name: Install pixi global tools
   ansible.builtin.command:
-    cmd: "{{ ansible_user_dir }}/.pixi/bin/pixi global install {{ item }}"
-    creates: "{{ ansible_user_dir }}/.pixi/envs/{{ item.split('=') | first }}"
+    cmd: "{{ ansible_facts['user_dir'] }}/.pixi/bin/pixi global install {{ item }}"
+    creates: "{{ ansible_facts['user_dir'] }}/.pixi/envs/{{ item.split('=') | first }}"
   loop: "{{ pixi_tools }}"

@@ -1,6 +1,6 @@
 - name: Initialize and apply dotfiles via chezmoi
   ansible.builtin.command:
     cmd: >-
-      {{ ansible_user_dir }}/.pixi/bin/chezmoi init --apply
+      {{ ansible_facts['user_dir'] }}/.pixi/bin/chezmoi init --apply
       --branch {{ dotfiles_branch }} {{ dotfiles_url }}
-    creates: "{{ ansible_user_dir }}/.local/share/chezmoi"
+    creates: "{{ ansible_facts['user_dir'] }}/.local/share/chezmoi"

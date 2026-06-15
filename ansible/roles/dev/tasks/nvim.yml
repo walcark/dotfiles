@@ -4,7 +4,7 @@
 - name: Clone neovim configurations repo
   ansible.builtin.git:
     repo: "{{ nvim_config_repo }}"
-    dest: "{{ ansible_user_dir }}/.config/nvim-configs"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/nvim-configs"
     recursive: true
     # Working repo: ensure it exists, then never touch it again
     update: false
@@ -12,7 +12,7 @@
 
 - name: Load nvim tools manifest
   ansible.builtin.include_vars:
-    file: "{{ ansible_user_dir }}/.config/nvim-configs/mini-nvim/tools.yml"
+    file: "{{ ansible_facts['user_dir'] }}/.config/nvim-configs/mini-nvim/tools.yml"
     name: nvim_tools
 
 - name: Install nvim language stack via pixi
@@ -26,16 +26,16 @@
 - name: Install npm-only language servers
   ansible.builtin.command:
     cmd: >-
-      {{ ansible_user_dir }}/.pixi/bin/npm install -g
-      --prefix {{ ansible_user_dir }}/.local {{ item.package }}
-    creates: "{{ ansible_user_dir }}/.local/bin/{{ item.bin }}"
+      {{ ansible_facts['user_dir'] }}/.pixi/bin/npm install -g
+      --prefix {{ ansible_facts['user_dir'] }}/.local {{ item.package }}
+    creates: "{{ ansible_facts['user_dir'] }}/.local/bin/{{ item.bin }}"
   loop: "{{ nvim_tools.npm }}"
   become: false
 
 - name: Install static binaries
   ansible.builtin.get_url:
     url: "{{ item.value.url | replace('{version}', item.value.version) }}"
-    dest: "{{ ansible_user_dir }}/.local/bin/{{ item.value.bin }}"
+    dest: "{{ ansible_facts['user_dir'] }}/.local/bin/{{ item.value.bin }}"
     mode: "0755"
   loop: "{{ nvim_tools.static | dict2items }}"
   loop_control:
