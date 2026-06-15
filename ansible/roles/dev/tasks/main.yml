@@ -6,3 +6,4 @@
     pixi_tools: "{{ dev_pixi_tools }}"
 
 - import_tasks: nvim.yml
+- import_tasks: tiger_vnc.yml
