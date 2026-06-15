@@ -50,42 +50,53 @@ _path_pretty() {
     done
 }
 
-_lspath_help() {
-    echo "lspath — manage colon-separated path variables"
+_pathtool_help() {
+    echo "pathtool — manage colon-separated path variables"
     echo ""
-    echo "Usage: lspath         [VAR]     list entries (default: PATH)"
-    echo "       lspath -a <entry> [VAR]  add after (append)"
-    echo "       lspath -b <entry> [VAR]  add before (prepend)"
-    echo "       lspath -r <entry> [VAR]  remove all occurrences"
-    echo "       lspath -c         [VAR]  remove non-existent + duplicates"
-    echo "       lspath -h                show this help"
+    echo "Usage: pathtool           [VAR]     list entries (default: PATH)"
+    echo "       pathtool -a <entry> [VAR]  add after (append)"
+    echo "       pathtool -b <entry> [VAR]  add before (prepend)"
+    echo "       pathtool -r <entry> [VAR]  remove all occurrences"
+    echo "       pathtool -c         [VAR]  remove non-existent + duplicates"
+    echo "       pathtool -h                show this help"
+    echo ""
+    echo "Mutations are silent by default (Unix style). Pass -v / --verbose"
+    echo "before the action to reprint the result, or just run 'lspath'."
+    echo ""
+    echo "lspath always lists/prints — it is the display-oriented front end."
 }
 
 # --- Public interface ---
 
-lspath() {
+pathtool() {
+    local verbose=
+    if [[ "${1:-}" == "-v" || "${1:-}" == "--verbose" ]]; then
+        verbose=1
+        shift
+    fi
+
     local opt="${1:-}"
 
     case "$opt" in
         -a)
-            local entry="${2:?usage: lspath -a <entry> [VAR]}" var="${3:-PATH}"
-            _path_has "$entry" "$var" && return 0
+            local entry="${2:?usage: pathtool -a <entry> [VAR]}" var="${3:-PATH}"
+            _path_has "$entry" "$var" && { [[ -n "$verbose" ]] && _path_pretty "$var"; return 0; }
             export "$var"="${!var:+${!var}:}$entry"
-            _path_pretty "$var"
+            [[ -z "$verbose" ]] || _path_pretty "$var"
             ;;
         -b)
-            local entry="${2:?usage: lspath -b <entry> [VAR]}" var="${3:-PATH}"
+            local entry="${2:?usage: pathtool -b <entry> [VAR]}" var="${3:-PATH}"
             local cleaned
             cleaned=$(_path_entries "$var" | grep -vxF "$entry" | paste -sd ':')
             export "$var"="$entry${cleaned:+:$cleaned}"
-            _path_pretty "$var"
+            [[ -z "$verbose" ]] || _path_pretty "$var"
             ;;
         -r)
-            local entry="${2:?usage: lspath -r <entry> [VAR]}" var="${3:-PATH}"
+            local entry="${2:?usage: pathtool -r <entry> [VAR]}" var="${3:-PATH}"
             local cleaned
             cleaned=$(_path_entries "$var" | grep -vxF "$entry" | paste -sd ':')
             export "$var"="$cleaned"
-            _path_pretty "$var"
+            [[ -z "$verbose" ]] || _path_pretty "$var"
             ;;
         -c)
             local var="${2:-PATH}" seen=()
@@ -96,16 +107,21 @@ lspath() {
                 [[ "$dup" -eq 0 ]] && seen+=("$p")
             done < <(_path_entries "$var")
             export "$var"="$(printf '%s\n' "${seen[@]:-}" | paste -sd ':')"
-            _path_pretty "$var"
+            [[ -z "$verbose" ]] || _path_pretty "$var"
             ;;
         -h)
-            _lspath_help
+            _pathtool_help
             ;;
         -*)
-            error "lspath: unknown option '$opt'" ; return 1
+            error "pathtool: unknown option '$opt'" ; return 1
             ;;
         *)
             _path_pretty "${opt:-PATH}"
             ;;
     esac
+}
+
+# Backward-compatible alias — forwards everything to pathtool.
+lspath() {
+    pathtool "$@"
 }
