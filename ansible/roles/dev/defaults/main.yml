@@ -2,14 +2,15 @@
 # Editor-agnostic tooling only: the language stack required by the Neovim
 # config is declared in the nvim repo itself (mini-nvim/tools.yaml) and
 # installed by tasks/nvim.yml right after the clone.
+dependencies:
+  - core
+
 dev_pixi_tools:
   - nvim
   - lazygit
   - python=3.11
-
-  # Documents
   - typst
-  - tinymist                              # Typst LSP (typst-lsp successor)
+  - tinymist
   - plantuml
 
 nvim_config_repo: "git@github.com:walcark/nvim-configs.git"

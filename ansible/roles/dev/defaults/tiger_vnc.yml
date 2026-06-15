@@ -1,0 +1,5 @@
+- name: Install TigerVNC with flatpak.
+  ansible.builtin.flatpak:
+    name: org.tigervnc.vncviewer
+    state: latest
+    method: user
