@@ -1,7 +1,12 @@
-- name: Ensure flatpak is available
+- name: Detect whether flatpak is available
   ansible.builtin.command: flatpak --version
   register: r_flatpak_check
   changed_when: false
+  failed_when: false
+
+- name: Record flatpak availability
+  ansible.builtin.set_fact:
+    flatpak_available: "{{ r_flatpak_check.rc == 0 }}"
 
 - name: Add FlatHub remote (user)
   community.general.flatpak_remote:
@@ -9,3 +14,4 @@
     flatpakrepo_url: https://flathub.org/repo/flathub.flatpakrepo
     method: user
     state: present
+  when: flatpak_available

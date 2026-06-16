@@ -3,3 +3,4 @@
     name: org.tigervnc.vncviewer
     state: latest
     method: user
+  when: flatpak_available | default(false)
