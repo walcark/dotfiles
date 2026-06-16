@@ -1,3 +1,7 @@
+# Default pixi location. Overridden per-machine by include_vars of the
+# chezmoi-rendered ~/.config/dotfiles/ansible.yml (data.pixi.home).
+pixi_home: "{{ ansible_facts['user_dir'] }}/.pixi"
+
 layers:
   desktop: true
   gnome: false

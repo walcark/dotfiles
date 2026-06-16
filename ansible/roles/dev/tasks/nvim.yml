@@ -26,7 +26,7 @@
 - name: Install npm-only language servers
   ansible.builtin.command:
     cmd: >-
-      {{ ansible_facts['user_dir'] }}/.pixi/bin/npm install -g
+      {{ pixi_home }}/bin/npm install -g
       --prefix {{ ansible_facts['user_dir'] }}/.local {{ item.package }}
     creates: "{{ ansible_facts['user_dir'] }}/.local/bin/{{ item.bin }}"
   loop: "{{ nvim_tools.npm }}"

@@ -1,6 +1,18 @@
 - name: Initialize and apply dotfiles via chezmoi
   ansible.builtin.command:
     cmd: >-
-      {{ ansible_facts['user_dir'] }}/.pixi/bin/chezmoi init --apply
+      chezmoi init --apply
       --branch {{ dotfiles_branch }} {{ dotfiles_url }}
     creates: "{{ ansible_facts['user_dir'] }}/.local/share/chezmoi"
+  environment:
+    PATH: "{{ pixi_home }}/bin:{{ ansible_env.PATH }}"
+
+# Re-apply just the ansible vars file: on an already-initialized machine the
+# init above is skipped by `creates`, but a newly added/changed template still
+# needs to land before the next task (`include_vars`) reads it.
+- name: Render chezmoi-managed ansible vars
+  ansible.builtin.command:
+    cmd: chezmoi apply {{ ansible_facts['user_dir'] }}/.config/dotfiles/ansible.yml
+  environment:
+    PATH: "{{ pixi_home }}/bin:{{ ansible_env.PATH }}"
+  changed_when: false

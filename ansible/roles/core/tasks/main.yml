@@ -1,7 +1,14 @@
+# chezmoi runs first: `chezmoi init --apply` renders ~/.config/dotfiles/ansible.yml
+# (pixi_home, ...) from the prompt answers, which the next task loads so the rest
+# of the run targets the right pixi — even when it lives outside ~/.pixi.
+- import_tasks: chezmoi.yml
+
+- name: Load chezmoi-rendered ansible vars
+  ansible.builtin.include_vars: "{{ ansible_facts['user_dir'] }}/.config/dotfiles/ansible.yml"
+
 - import_tasks: pixi.yml
   vars:
     pixi_tools: "{{ core_pixi_tools }}"
 
 - import_tasks: flatpak.yml
-- import_tasks: chezmoi.yml
 - import_tasks: zk.yml

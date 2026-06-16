@@ -1,8 +1,15 @@
 # Parametrized task: expects a `pixi_tools` list. Other roles reuse it with
 # `include_role: {name: core, tasks_from: pixi}` — core being the only
 # allowed cross-role dependency, this is not a "utils" role in disguise.
+#
+# PIXI_HOME pins where `global install` writes: without it pixi always targets
+# ~/.pixi, so on a machine whose pixi_home differs the binaries would land off
+# the relocated tree while `creates` checked the relocated one (→ reinstall loop).
 - name: Install pixi global tools
   ansible.builtin.command:
-    cmd: "{{ ansible_facts['user_dir'] }}/.pixi/bin/pixi global install {{ item }}"
-    creates: "{{ ansible_facts['user_dir'] }}/.pixi/envs/{{ item.split('=') | first }}"
+    cmd: "pixi global install {{ item }}"
+    creates: "{{ pixi_home }}/envs/{{ item.split('=') | first }}"
+  environment:
+    PIXI_HOME: "{{ pixi_home }}"
+    PATH: "{{ pixi_home }}/bin:{{ ansible_env.PATH }}"
   loop: "{{ pixi_tools }}"
