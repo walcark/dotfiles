@@ -8,6 +8,7 @@ dependencies:
 dev_pixi_tools:
   - nvim
   - lazygit
+  - go
   - python=3.11
   - typst
   - tinymist

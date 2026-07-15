@@ -7,3 +7,4 @@
 
 - import_tasks: nvim.yml
 - import_tasks: tiger_vnc.yml
+- import_tasks: golang.yml

@@ -1,0 +1,48 @@
+# Compile smoke-test: prove the Go toolchain installed above can build and run
+# a program end-to-end. Nothing persists — the workspace lives in a temp dir
+# and is removed in `always`, so this is pure verification, not managed state.
+- name: Verify Go toolchain
+  block:
+    - name: Create temporary Go workspace
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: go-smoke
+      register: go_smoke_dir
+
+    - name: Write Go module manifest
+      ansible.builtin.copy:
+        dest: "{{ go_smoke_dir.path }}/go.mod"
+        content: |
+          module gosmoke
+
+          go 1.21
+
+    - name: Write test program
+      ansible.builtin.copy:
+        dest: "{{ go_smoke_dir.path }}/main.go"
+        content: |
+          package main
+
+          import "fmt"
+
+          func main() {
+              fmt.Println("hello from go")
+          }
+
+    - name: Build and run the test program
+      ansible.builtin.command:
+        cmd: "{{ pixi_home }}/bin/go run ."
+        chdir: "{{ go_smoke_dir.path }}"
+      environment:
+        HOME: "{{ ansible_facts['user_dir'] }}"
+        GOTOOLCHAIN: local
+        CGO_ENABLED: "0"
+      register: go_smoke_run
+      changed_when: false
+      failed_when: "'hello from go' not in go_smoke_run.stdout"
+  always:
+    - name: Remove temporary Go workspace
+      ansible.builtin.file:
+        path: "{{ go_smoke_dir.path }}"
+        state: absent
+      when: go_smoke_dir is defined
