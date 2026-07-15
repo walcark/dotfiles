@@ -13,3 +13,12 @@
     type = "git-repo"
     url = "https://github.com/dexpota/kitty-themes.git"
     refreshPeriod = "168h"
+
+# agentrc: versioned config for coding agents, deployed by the hook
+# .chezmoiscripts/run_after_deploy-agentrc.sh.tmpl (scripts/install.py).
+# NOTE: requires the walcark/agentrc remote to be pushed first, otherwise
+# `chezmoi apply` fails when cloning this external.
+[".local/share/agentrc"]
+    type = "git-repo"
+    url = "https://github.com/walcark/agentrc.git"
+    refreshPeriod = "168h"

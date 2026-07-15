@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# chezmoi run_after_ hook: deploy the agent config from the agentrc clone.
+# Re-runs on every `chezmoi apply`; scripts/install.py is idempotent.
+set -euo pipefail
+
+repo="{{ .chezmoi.homeDir }}/.local/share/agentrc"
+
+if [ ! -d "$repo" ]; then
+    echo "agentrc: external clone missing ($repo); rerun 'chezmoi apply'." >&2
+    exit 0
+fi
+
+python3 "$repo/scripts/install.py" claude
