@@ -9,7 +9,6 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 
 # For tools that still rely on legacy locations but support XDG if set
 export LESSHISTFILE="$XDG_CACHE_HOME/less/history"
-export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
 export HISTFILE="$XDG_STATE_HOME/shell/history"
 export PYTHONHISTFILE="$XDG_STATE_HOME/python/history"
 
