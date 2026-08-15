@@ -15,9 +15,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/walcark/dotfiles/converge/internal/activelayers"
 	"github.com/walcark/dotfiles/converge/internal/binscan"
 	"github.com/walcark/dotfiles/converge/internal/dfview"
-	"github.com/walcark/dotfiles/converge/internal/groupvars"
+	"github.com/walcark/dotfiles/converge/internal/ledger"
+	"github.com/walcark/dotfiles/converge/internal/machinevars"
 	"github.com/walcark/dotfiles/converge/internal/manifest"
 	"github.com/walcark/dotfiles/converge/internal/pixiglobal"
 	"github.com/walcark/dotfiles/converge/internal/repo"
@@ -65,14 +67,16 @@ func iconFor(layerID string) string {
 // last one parsed wins for every page), so pages are kept in separate sets.
 func New(r *repo.Repo, pixiHome string) (*App, error) {
 	pages := map[string]*template.Template{}
-	for _, page := range []string{"overview", "dotfiles", "run"} {
+	for _, page := range []string{"overview", "dotfiles", "run", "layers"} {
 		tmpl, err := template.ParseFS(templateFS, "templates/layout.html", "templates/"+page+".html")
 		if err != nil {
 			return nil, fmt.Errorf("webui: parse templates for %s: %w", page, err)
 		}
 		pages[page] = tmpl
 	}
-	return &App{Repo: r, Runner: runner.NewManager(r), pages: pages, pixiHome: pixiHome}, nil
+	app := &App{Repo: r, Runner: runner.NewManager(r), pages: pages, pixiHome: pixiHome}
+	app.Runner.OnApplySuccess = app.updateLedger
+	return app, nil
 }
 
 // Routes registers the app's handlers on mux.
@@ -84,6 +88,24 @@ func (a *App) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("/run", a.handleRun)
 	mux.HandleFunc("/run/check", a.handleRunCheck)
 	mux.HandleFunc("/run/apply", a.handleRunApply)
+	mux.HandleFunc("/layers", a.handleLayers)
+	mux.HandleFunc("/layers/toggle", a.handleLayerToggle)
+}
+
+// updateLedger runs after every successful Apply — see runner.Manager's
+// OnApplySuccess. Best-effort: a ledger write failure shouldn't be able to
+// make a successful apply look like anything other than a success, so
+// errors are swallowed here rather than surfaced on the run.
+func (a *App) updateLedger() {
+	layers, err := manifest.LoadAll(a.Repo.RootDir)
+	if err != nil {
+		return
+	}
+	active, _, err := activelayers.Load(a.Repo.RootDir, os.Getenv("HOME"))
+	if err != nil {
+		return
+	}
+	_ = ledger.Snapshot(layers, active).Save(os.Getenv("HOME"))
 }
 
 // — shared shell data —
@@ -106,7 +128,7 @@ type machineInfo struct {
 func navFor(active string) []navItem {
 	items := []navItem{
 		{Label: "Overview", Icon: "squares-four", Href: "/overview", Enabled: true},
-		{Label: "Layers", Icon: "stack", Badge: "Phase 3"},
+		{Label: "Layers", Icon: "stack", Href: "/layers", Enabled: true},
 		{Label: "Source edits", Icon: "git-diff", Badge: "Phase 6"},
 		{Label: "Dotfiles", Icon: "folder-notch", Href: "/dotfiles", Enabled: true},
 		{Label: "Machines", Icon: "hard-drives", Badge: "Phase 3"},
@@ -203,7 +225,7 @@ func (a *App) handleOverview(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	gv, err := groupvars.Load(a.Repo.RootDir)
+	activeSet, _, err := activelayers.Load(a.Repo.RootDir, os.Getenv("HOME"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -234,12 +256,12 @@ func (a *App) handleOverview(w http.ResponseWriter, req *http.Request) {
 		packageCount += l.PackageCount()
 	}
 	var keys []string
-	for k := range gv.Layers {
+	for k := range activeSet {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		if !gv.Layers[k] {
+		if !activeSet[k] {
 			continue
 		}
 		l, ok := byID[k]
@@ -480,4 +502,64 @@ func (a *App) handleRunApply(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	http.Redirect(w, req, "/run", http.StatusSeeOther)
+}
+
+// — Layers —
+
+type layerCardVM struct {
+	ID           string
+	Name         string
+	Description  string
+	Icon         string
+	Active       bool
+	Toggleable   bool // false for core: unconditional, no flag to flip
+	PackageCount int
+	TaskCount    int
+	Reversible   int
+	TasksTotal   int
+}
+
+func (a *App) handleLayers(w http.ResponseWriter, req *http.Request) {
+	layers, err := manifest.LoadAll(a.Repo.RootDir)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	active, fromMachine, err := activelayers.Load(a.Repo.RootDir, os.Getenv("HOME"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var cards []layerCardVM
+	for _, l := range layers {
+		rev, total := l.ReversibleCount()
+		cards = append(cards, layerCardVM{
+			ID: l.ID, Name: l.Name, Description: l.Description, Icon: iconFor(l.ID),
+			Active:       l.ID == "core" || active[l.ID],
+			Toggleable:   l.ID != "core",
+			PackageCount: l.PackageCount(), TaskCount: len(l.Tasks),
+			Reversible: rev, TasksTotal: total,
+		})
+	}
+
+	a.render(w, "layers", map[string]any{
+		"Title": "Layers", "Kicker": "ansible/roles",
+		"Nav": navFor("Layers"), "Machine": a.machine(),
+		"Cards": cards, "FromMachine": fromMachine,
+	})
+}
+
+func (a *App) handleLayerToggle(w http.ResponseWriter, req *http.Request) {
+	id := req.FormValue("id")
+	enable := req.FormValue("enable") == "true"
+	if id == "" || id == "core" {
+		http.Error(w, "webui: refusing to toggle core or an empty id", http.StatusBadRequest)
+		return
+	}
+	if err := machinevars.SetLayer(a.Repo, id, enable); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, req, "/layers", http.StatusSeeOther)
 }

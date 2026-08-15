@@ -1,8 +1,8 @@
-{{ if not .features.dev -}}
+{{ if not .layers.dev -}}
 .bashrc.d/dev
 {{ end -}}
 
-{{ if not .features.hpc -}}
+{{ if not .layers.hpc -}}
 .bashrc.d/hpc
 bin/hpc
 {{ end -}}

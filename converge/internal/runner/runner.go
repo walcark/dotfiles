@@ -16,16 +16,43 @@ package runner
 import (
 	"bufio"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"time"
 
 	"github.com/walcark/dotfiles/converge/internal/repo"
 )
+
+//go:embed callback/converge_json.py
+var callbackPluginSource []byte
+
+// callbackPluginDir writes the embedded callback plugin to a stable file
+// under the OS temp dir and returns its containing directory.
+//
+// Earlier this located the plugin via runtime.Caller(0) relative to this
+// source file — which works when running `go run` from a checkout, but
+// breaks completely for a built, deployed, or copied-to-another-machine
+// binary: runtime.Caller bakes in the *build* machine's source path, which
+// has no reason to exist on whatever machine actually runs the binary.
+// Found the hard way, copying a binary built here straight to the VM.
+// Embedding the plugin's bytes at compile time and writing them out at
+// startup makes the binary self-contained, as it needs to be.
+func callbackPluginDir() (string, error) {
+	dir := filepath.Join(os.TempDir(), "converge-callback")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", fmt.Errorf("runner: callback plugin dir: %w", err)
+	}
+	path := filepath.Join(dir, "converge_json.py")
+	if err := os.WriteFile(path, callbackPluginSource, 0o644); err != nil {
+		return "", fmt.Errorf("runner: write callback plugin: %w", err)
+	}
+	return dir, nil
+}
 
 // Event is one line the converge_json callback plugin emits.
 type Event struct {
@@ -114,6 +141,10 @@ func (r *Run) Snapshot() Snapshot {
 type Manager struct {
 	Repo *repo.Repo
 
+	// OnApplySuccess, if set, runs after a mode "apply" Run finishes with
+	// StateOK — see internal/webui wiring this to the ledger.
+	OnApplySuccess func()
+
 	mu  sync.Mutex
 	run *Run
 	seq int
@@ -175,6 +206,9 @@ func (m *Manager) execute(run *Run, mode string) {
 	}
 	if run.Snapshot().State != StateFailed {
 		m.finish(run, StateOK, "")
+		if m.OnApplySuccess != nil {
+			m.OnApplySuccess()
+		}
 	}
 }
 
@@ -191,8 +225,10 @@ func (m *Manager) runPlaybook(run *Run, stage Stage, extraArgs []string) error {
 	run.stage = stage
 	run.mu.Unlock()
 
-	_, thisFile, _, _ := runtime.Caller(0)
-	callbackDir := filepath.Join(filepath.Dir(thisFile), "callback")
+	callbackDir, err := callbackPluginDir()
+	if err != nil {
+		return err
+	}
 
 	args := []string{
 		"-i", filepath.Join(m.Repo.RootDir, "ansible", "inventory.ini"),

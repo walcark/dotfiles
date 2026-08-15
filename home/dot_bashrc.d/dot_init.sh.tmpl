@@ -24,10 +24,10 @@ THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd )"
 
 source_dir "$THIS_DIR/core"
 
-{{ if .features.dev -}}
+{{ if .layers.dev -}}
 source_dir "$THIS_DIR/dev"
 {{ end -}}
 
-{{ if .features.hpc -}}
+{{ if .layers.hpc -}}
 source_dir "$THIS_DIR/hpc"
 {{ end -}}

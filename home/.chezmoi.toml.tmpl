@@ -1,9 +1,16 @@
 {{- $distro   := promptStringOnce . "machine.distro" "Distro (ubuntu/arch/fedora)"   "ubuntu" -}}
 {{- $pixiHome := promptStringOnce . "pixi.home"      "Pixi home dir (vide = ~/.pixi)" "" -}}
 {{- $email    := promptStringOnce . "git.email"      "Git email" "kevin.walcarius@gmail.com" -}}
-{{- $dev      := promptBoolOnce   . "features.dev"   "Feature: dev (editor, dev tools)"  true -}}
-{{- $hpc      := promptBoolOnce   . "features.hpc"   "Feature: hpc (SLURM, cluster)"     false -}}
-{{- $admin    := promptBoolOnce   . "features.admin" "Feature: admin (sudo, ansible)"     false -}}
+{{- /* Same set, same defaults as ansible/group_vars/all.yml's `layers:` map — this is
+   now the actual per-machine source of truth (see home/private_dot_config/dotfiles/ansible.yml.tmpl);
+   group_vars/all.yml only supplies the fallback for a machine that predates this prompt. */ -}}
+{{- $desktop  := promptBoolOnce   . "layers.desktop" "Layer: desktop (terminal themes)"       true -}}
+{{- $gnome    := promptBoolOnce   . "layers.gnome"   "Layer: gnome (Thunderbird, extensions)" false -}}
+{{- $gaming   := promptBoolOnce   . "layers.gaming"  "Layer: gaming (Steam, Lutris, Discord)"  true -}}
+{{- $drawing  := promptBoolOnce   . "layers.drawing" "Layer: drawing (Krita)"                 false -}}
+{{- $hpc      := promptBoolOnce   . "layers.hpc"     "Layer: hpc (SLURM, cluster)"             false -}}
+{{- $dev      := promptBoolOnce   . "layers.dev"     "Layer: dev (editor, dev tools)"          true -}}
+{{- $homelab  := promptBoolOnce   . "layers.homelab" "Layer: homelab"                          false -}}
 
 [edit]
     command = "vi"
@@ -12,14 +19,14 @@
     distro   = {{ $distro | quote }}
     hostname = {{ .chezmoi.hostname | quote }}
 
-[data.features]
-    dev     = {{ $dev }}
+[data.layers]
+    desktop = {{ $desktop }}
+    gnome   = {{ $gnome }}
+    gaming  = {{ $gaming }}
+    drawing = {{ $drawing }}
     hpc     = {{ $hpc }}
-    admin   = {{ $admin }}
-    gnome   = false
-    gaming  = false
-    drawing = false
-    proxmox = false
+    dev     = {{ $dev }}
+    homelab = {{ $homelab }}
 
 [data.pixi]
     home = {{ if $pixiHome }}{{ $pixiHome | quote }}{{ else }}{{ joinPath .chezmoi.homeDir ".pixi" | quote }}{{ end }}

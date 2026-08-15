@@ -4,11 +4,40 @@ A single Go binary that serves the Converge UI on `127.0.0.1:<random port>`
 and opens the default browser — see the design handoff (`ansible/roles/README.md`
 and the Phase 0 commit) for the project's overall shape.
 
-## Status: Phase 2 (Overview, Dotfiles, Runs)
+## Status: Phase 3 (+ Overview, Dotfiles, Runs)
 
-Overview, Dotfiles (source tree, binaries & scripts) and Run log are wired
-up. Layers, Source edits and Machines are still disabled placeholders,
-tagged with the phase that implements them.
+Overview, Dotfiles, Run log and Layers are wired up. Source edits and
+Machines are still disabled placeholders, tagged with the phase that
+implements them.
+
+**Layers now has a real per-machine source of truth.** Repo change
+alongside the app code: `home/.chezmoi.toml.tmpl` prompts for all 7
+layers (`layers.desktop`, `.gnome`, `.gaming`, `.drawing`, `.hpc`, `.dev`,
+`.homelab` — same set and defaults as `group_vars/all.yml`), replacing the
+old, narrower, disconnected `features.*` prompts (`dev`/`hpc`/`admin`,
+the latter unused anywhere) that didn't even feed the ansible run at all.
+`home/private_dot_config/dotfiles/ansible.yml.tmpl` now renders a real
+`layers:` map from that data — which `include_vars` gives precedence over
+`group_vars/all.yml` for every role's `when:` in `ansible/playbook.yml`,
+exactly the "app writes the per-machine file" decision from the design
+review.
+
+Toggling a layer (`internal/machinevars`) edits `[data.layers]` in
+`~/.config/chezmoi/chezmoi.toml` directly and re-applies just the two
+files that depend on it — not a blanket `chezmoi apply`, which would also
+flush any unrelated pending drift as a surprise side effect of clicking a
+checkbox. `chezmoi init --promptBool` looked like the obvious tool for
+this and does not work: it only populates the plain `promptBool` template
+function's answers, not `promptBoolOnce`'s cache, which is what
+`.chezmoi.toml.tmpl` actually calls (confirmed the hard way — the flag
+silently no-ops). chezmoi.toml is read once at startup and never
+re-rendered by `apply` (only `init` re-renders it), so a direct edit
+followed by a targeted apply works without touching that cache at all.
+
+**Ledger** (`internal/ledger`, `~/.local/state/converge/ledger.json`,
+not versioned): after every successful Apply, snapshots every package
+every currently-active layer's tasks declare. Sets up Phase 4's orphan
+detection (diff old vs. new snapshot) without implementing it yet.
 
 **⚠️ `CONVERGE_DEV_SOURCE` only sandboxes reads, not runs.** It repoints
 the read-only chezmoi queries (status/managed/ignored/data) at a plain
@@ -61,6 +90,13 @@ where this repo has actually been applied via chezmoi (i.e. everywhere
   mode, so `go_smoke_dir` was never set and everything after it broke on
   `.path`). Fixed with `check_mode: false` on the block — it never
   persists anything, so there's nothing check mode needs to protect there.
+- **Found and fixed along the way, testing on the VM**: the runner used to
+  locate its ansible callback plugin via `runtime.Caller(0)` relative to
+  this source file — works with `go run` from a checkout, breaks
+  completely for a binary built here and copied to another machine
+  (`runtime.Caller` bakes in the *build* machine's source path). The
+  plugin is `//go:embed`ded and written to a temp file at startup now, so
+  the binary is actually self-contained.
 
 ## Package layout
 
@@ -73,4 +109,7 @@ where this repo has actually been applied via chezmoi (i.e. everywhere
 | `internal/pixiglobal` | `<pixiHome>/manifests/pixi-global.toml` — what's actually installed |
 | `internal/dfview` | turns the above into the Dotfiles tree's rows |
 | `internal/runner` | runs `ansible-playbook` with a custom streaming JSON callback (`internal/runner/callback/converge_json.py`), tracks in-memory run state |
+| `internal/activelayers` | resolves the real on/off state of every layer (per-machine file, falling back to group_vars) |
+| `internal/machinevars` | how a layer's on/off state actually changes — edits `chezmoi.toml`, re-applies the dependent files |
+| `internal/ledger` | reads/writes `~/.local/state/converge/ledger.json` |
 | `internal/webui` | HTTP handlers, templates, the Nocturne-based static assets |

@@ -2,6 +2,10 @@
 # chezmoi-rendered ~/.config/dotfiles/ansible.yml (data.pixi.home).
 pixi_home: "{{ ansible_facts['user_dir'] }}/.pixi"
 
+# Fallback only — a machine bootstrapped before the `layers.*` chezmoi
+# prompts existed. Every machine bootstrapped since has its own
+# ~/.config/dotfiles/ansible.yml `layers:` map (include_vars in
+# core/tasks/main.yml), which takes precedence over this one.
 layers:
   desktop: true
   gnome: false

@@ -1,2 +1,21 @@
-# Consumed by ansible-pull via `include_vars` in roles/core (see core/tasks/main.yml).
+# Consumed by ansible-pull via `include_vars` in roles/core (see
+# core/tasks/main.yml). include_vars has higher precedence than group_vars,
+# so `layers` here overrides ansible/group_vars/all.yml's `layers:` map for
+# every role's `when:` condition in ansible/playbook.yml — this file is the
+# actual per-machine source of truth; group_vars keeps defaults only.
+#
+# Rendered from `.layers` in ~/.config/chezmoi/chezmoi.toml (see
+# home/.chezmoi.toml.tmpl's promptBoolOnce calls). The Converge app changes
+# a layer by updating that cached answer (`chezmoi init --promptBool
+# layers.<id>=<bool>`) and re-applying — never by editing this rendered
+# file directly, which the next apply would just overwrite.
 pixi_home: {{ .pixi.home | quote }}
+
+layers:
+  desktop: {{ .layers.desktop }}
+  gnome: {{ .layers.gnome }}
+  gaming: {{ .layers.gaming }}
+  drawing: {{ .layers.drawing }}
+  hpc: {{ .layers.hpc }}
+  dev: {{ .layers.dev }}
+  homelab: {{ .layers.homelab }}
