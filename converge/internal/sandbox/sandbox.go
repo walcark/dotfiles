@@ -40,6 +40,13 @@ func Run(repoRoot string) (Result, error) {
 	script := strings.Join([]string{
 		"set -e",
 		"dnf install -y -q ansible-core >/dev/null",
+		// community.general provides the flatpak/flatpak_remote modules
+		// several roles use — --syntax-check resolves module names, so
+		// without this collection installed every one of them errors as
+		// "couldn't resolve module/action", indistinguishable at a glance
+		// from an actual typo. Found the same way as the :z mount fix:
+		// running this against a real merge branch, not guessed upfront.
+		"ansible-galaxy collection install -q community.general >/dev/null",
 		"cd /repo",
 		"ansible-playbook --syntax-check ansible/playbook.yml",
 		"ansible-playbook --syntax-check ansible/absent.yml",
