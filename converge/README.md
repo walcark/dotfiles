@@ -170,6 +170,31 @@ checked out with the attempted changes uncommitted, for inspection —
 commits, pushes, opens the PR, and switches back to `main` (safe by then:
 everything's committed and pushed, nothing left uncommitted to lose).
 
+Found and fixed via a real merge, on a real branch, opened as a real PR
+against `walcark/dotfiles` (#3, merging `drawing` into `gaming` — closed
+without merging, it was only ever a mechanism test): three sandbox
+bugs, one per attempt, each only visible once the container actually ran
+rather than by reading the script.
+- The `:ro` bind mount looked empty inside the container — a classic
+  SELinux context mismatch on this Fedora host, invisible unless you're
+  running SELinux enforcing (`podman run -v host:container:ro` needs
+  `:ro,z` to relabel the mount for a container to read it at all).
+- `ansible-playbook --syntax-check` resolves module names too, and
+  `community.general` (the flatpak/flatpak_remote modules several roles
+  use) isn't in a bare `ansible-core` install — every flatpak task
+  errored as "couldn't resolve module/action", reading exactly like a
+  typo in the merge until you check what's actually installed.
+- `ansible-galaxy collection install -q ...` — `-q` isn't a global flag,
+  it's per-subcommand; the command just refused to run.
+
+**Known limitation, not fixed**: a merged `meta/layer.yml` comes out
+reformatted by `yaml.v3`'s default marshaling — 4-space indent, inline
+arrays (`profiles: [client]`) exploded into block lists — rather than
+matching the original file's compact style. Still valid, still correct,
+just a noisier diff than necessary for a human reviewing the PR. Fixing
+it means a custom YAML writer that preserves flow-style choices;
+`yaml.v3` doesn't round-trip that from a plain struct marshal.
+
 **⚠️ `CONVERGE_DEV_SOURCE` only sandboxes reads, not runs.** It repoints
 the read-only chezmoi queries (status/managed/ignored/data) at a plain
 working copy for fast iteration — but Check and Apply on the Run log page
