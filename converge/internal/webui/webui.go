@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,7 +18,9 @@ import (
 
 	"github.com/walcark/dotfiles/converge/internal/activelayers"
 	"github.com/walcark/dotfiles/converge/internal/binscan"
+	"github.com/walcark/dotfiles/converge/internal/dfedit"
 	"github.com/walcark/dotfiles/converge/internal/dfview"
+	"github.com/walcark/dotfiles/converge/internal/envlocal"
 	"github.com/walcark/dotfiles/converge/internal/ledger"
 	"github.com/walcark/dotfiles/converge/internal/machinevars"
 	"github.com/walcark/dotfiles/converge/internal/manifest"
@@ -68,7 +71,7 @@ func iconFor(layerID string) string {
 // last one parsed wins for every page), so pages are kept in separate sets.
 func New(r *repo.Repo, pixiHome string) (*App, error) {
 	pages := map[string]*template.Template{}
-	for _, page := range []string{"overview", "dotfiles", "run", "layers"} {
+	for _, page := range []string{"overview", "dotfiles", "run", "layers", "dfedit"} {
 		tmpl, err := template.ParseFS(templateFS, "templates/layout.html", "templates/"+page+".html")
 		if err != nil {
 			return nil, fmt.Errorf("webui: parse templates for %s: %w", page, err)
@@ -92,6 +95,9 @@ func (a *App) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("/run/apply", a.handleRunApply)
 	mux.HandleFunc("/layers", a.handleLayers)
 	mux.HandleFunc("/layers/toggle", a.handleLayerToggle)
+	mux.HandleFunc("/dotfiles/env/save", a.handleEnvSave)
+	mux.HandleFunc("/dotfiles/edit", a.handleDotfilesEdit)
+	mux.HandleFunc("/dotfiles/edit/save", a.handleDotfilesEditSave)
 }
 
 // updateLedger runs after every successful Apply — see runner.Manager's
@@ -338,6 +344,7 @@ func (a *App) handleOverview(w http.ResponseWriter, req *http.Request) {
 
 type treeRowVM struct {
 	Name     string
+	Path     string
 	IsDir    bool
 	Status   string
 	IndentPx int
@@ -388,7 +395,7 @@ func (a *App) handleDotfiles(w http.ResponseWriter, req *http.Request) {
 		rows := dfview.Rows(managed, ignored, status, destDir)
 		vmRows := make([]treeRowVM, len(rows))
 		for i, r := range rows {
-			vmRows[i] = treeRowVM{Name: r.Name, IsDir: r.IsDir, Status: r.Status, IndentPx: 12 + r.Depth*16}
+			vmRows[i] = treeRowVM{Name: r.Name, Path: r.Path, IsDir: r.IsDir, Status: r.Status, IndentPx: 12 + r.Depth*16}
 		}
 		data["Rows"] = vmRows
 		data["Counts"] = dfview.Counts(rows)
@@ -434,9 +441,147 @@ func (a *App) handleDotfiles(w http.ResponseWriter, req *http.Request) {
 			pixis = append(pixis, pixiVM{Name: g, Layers: owners[g]})
 		}
 		data["PixiGlobals"] = pixis
+
+	case "env":
+		home := os.Getenv("HOME")
+		env, raw, err := envlocal.Load(home)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		expandEnv := envExpander(env)
+		var pathVars []pathVarVM
+		for _, pv := range env.PathVars {
+			vm := pathVarVM{Name: pv.Name}
+			for _, entry := range pv.Entries {
+				expanded := os.Expand(entry, expandEnv)
+				_, statErr := os.Stat(expanded)
+				vm.Entries = append(vm.Entries, pathEntryVM{Value: entry, Exists: statErr == nil})
+			}
+			pathVars = append(pathVars, vm)
+		}
+		data["Exports"] = env.Exports
+		data["PathVars"] = pathVars
+		data["EnvMatchesFile"] = env.Matches(raw)
 	}
 
 	a.render(w, "dotfiles", data)
+}
+
+// envExpander resolves $VAR references inside a path variable's entries —
+// both other exports in the same file (LIBS_PATH etc.) and the real
+// process environment (HOME etc.), so existence checks reflect reality.
+func envExpander(env envlocal.Env) func(string) string {
+	values := map[string]string{}
+	for _, e := range os.Environ() {
+		if k, v, ok := strings.Cut(e, "="); ok {
+			values[k] = v
+		}
+	}
+	for _, e := range env.Exports {
+		values[e.Key] = os.Expand(e.Value, func(k string) string { return values[k] })
+	}
+	return func(k string) string { return values[k] }
+}
+
+type pathEntryVM struct {
+	Value  string
+	Exists bool
+}
+type pathVarVM struct {
+	Name    string
+	Entries []pathEntryVM
+}
+
+func (a *App) handleEnvSave(w http.ResponseWriter, req *http.Request) {
+	if err := req.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	keys := req.Form["export_key"]
+	values := req.Form["export_value"]
+	var env envlocal.Env
+	for i, k := range keys {
+		k = strings.TrimSpace(k)
+		if k == "" {
+			continue
+		}
+		v := ""
+		if i < len(values) {
+			v = values[i]
+		}
+		env.Exports = append(env.Exports, envlocal.Export{Key: k, Value: v})
+	}
+
+	names := req.Form["pathvar_name"]
+	entries := req.Form["pathvar_entry"]
+	// The form doesn't group entries per variable explicitly — reload the
+	// existing structure to know how many entries belong to each name,
+	// matching them back up in order.
+	home := os.Getenv("HOME")
+	existing, _, err := envlocal.Load(home)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	pos := 0
+	for i, name := range names {
+		count := 0
+		if i < len(existing.PathVars) {
+			count = len(existing.PathVars[i].Entries)
+		}
+		var vals []string
+		for j := 0; j < count && pos < len(entries); j++ {
+			vals = append(vals, entries[pos])
+			pos++
+		}
+		env.PathVars = append(env.PathVars, envlocal.PathVar{Name: strings.TrimSpace(name), Entries: vals})
+	}
+
+	if err := env.Save(home); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, req, "/dotfiles?tab=env", http.StatusSeeOther)
+}
+
+// — Dotfiles source editor —
+
+func (a *App) handleDotfilesEdit(w http.ResponseWriter, req *http.Request) {
+	target := req.URL.Query().Get("path")
+	if target == "" {
+		http.Error(w, "webui: missing path", http.StatusBadRequest)
+		return
+	}
+	file, err := dfedit.Read(a.Repo, target)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data := map[string]any{
+		"Title": file.TargetPath, "Kicker": "Dotfiles · edit",
+		"Nav": navFor("Dotfiles"), "Machine": a.machine(),
+		"File": file,
+	}
+	if req.URL.Query().Get("preview") == "1" && file.IsTemplate {
+		if rendered, err := dfedit.Preview(a.Repo, file.Content); err == nil {
+			data["Rendered"] = rendered
+		} else {
+			data["PreviewError"] = err.Error()
+		}
+	}
+	a.render(w, "dfedit", data)
+}
+
+func (a *App) handleDotfilesEditSave(w http.ResponseWriter, req *http.Request) {
+	target := req.FormValue("path")
+	content := req.FormValue("content")
+	if err := dfedit.Write(a.Repo, target, content); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, req, "/dotfiles/edit?path="+url.QueryEscape(target)+"&saved=1", http.StatusSeeOther)
 }
 
 // — Run log —

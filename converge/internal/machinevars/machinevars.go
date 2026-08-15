@@ -22,7 +22,6 @@ package machinevars
 import (
 	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/BurntSushi/toml"
 
@@ -81,11 +80,8 @@ func SetLayer(r *repo.Repo, layerID string, enabled bool) error {
 		return fmt.Errorf("machinevars: encode %s: %w", configPath, err)
 	}
 
-	args := append([]string{"apply"}, targets...)
-	cmd := exec.Command(r.ChezmoiBin, args...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("machinevars: chezmoi apply: %w (%s)", err, string(out))
+	if err := r.Apply(targets...); err != nil {
+		return fmt.Errorf("machinevars: %w", err)
 	}
 	return nil
 }

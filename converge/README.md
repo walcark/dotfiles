@@ -4,7 +4,7 @@ A single Go binary that serves the Converge UI on `127.0.0.1:<random port>`
 and opens the default browser — see the design handoff (`ansible/roles/README.md`
 and the Phase 0 commit) for the project's overall shape.
 
-## Status: Phase 4 (+ Overview, Dotfiles, Runs, Layers)
+## Status: Phase 5 (+ Overview, Dotfiles, Runs, Layers, editors)
 
 Overview, Dotfiles, Run log and Layers are wired up. Source edits and
 Machines are still disabled placeholders, tagged with the phase that
@@ -73,6 +73,58 @@ regardless of `tasks_from`, so uninstalling Gaming was **also** silently
 re-running core's full *install* (chezmoi init, pixi installs, the
 FlatHub remote, the zk clone) as a side effect. Deleted all four files —
 harmless for the normal install flow, actively wrong for this one.
+
+## Phase 5 — dotfiles source editor, `~/.env.local` editor
+
+Every file row on the Dotfiles source tree is now a link
+(`internal/dfedit`): edits the *source* file in the chezmoi source tree,
+never the applied file in `$HOME` directly, then runs a targeted
+`chezmoi apply` — the same effect as `chezmoi edit <file>`. `.tmpl` files
+get a second pane rendering the saved source through
+`chezmoi execute-template` (this machine's real data), never guessed —
+the design's own explicit warning about editing a template as final text.
+
+Guardrail newly relevant here (wasn't for anything in Phases 2–4, which
+never write to the source tree): refuse to write if the chezmoi source
+git tree is dirty. chezmoi has no merge machinery — writing over an
+already-uncommitted manual edit would silently discard it the moment
+`chezmoi apply` runs.
+
+`internal/envlocal` owns `~/.env.local` (not chezmoi-managed at all —
+sourced directly by `dot_bashrc.d/core/99-local.sh`, see the main
+README's "Client / Server Differentiation" section) entirely: the file is
+regenerated whole from structured Exports/PathVars on every save, in
+exactly the shape the main README already documents by hand. A hand
+edit that doesn't match that shape is detected (`Env.Matches`) and
+flagged before a save would silently discard it.
+
+Found and fixed via real end-to-end testing **on this actual host**, not
+just the VM — the first Phase 5 test run surfaced two bugs already
+sitting latent in Phases 3–4's code:
+
+- **This very machine's `~/.config/chezmoi/chezmoi.toml` was still on the
+  pre-Phase-3 `features.*` schema.** `chezmoi apply` never re-renders
+  `chezmoi.toml` — only `chezmoi init` does — so the Phase 3 rename had
+  silently never taken effect here despite the source tree being current.
+  Worse: `~/.local/share/chezmoi` (this host's real chezmoi checkout,
+  separate from the `~/dev/current/dotfiles` working copy Claude edits
+  in) was *also* still on the pre-Phase-0 commit — never pulled, because
+  every prior test pulled the **VM's** checkout, not this machine's own.
+  Fixing this for real (not just noting it) needed both: `git pull` the
+  real checkout, then `chezmoi init --no-tty --promptDefaults` to
+  re-render `chezmoi.toml`. Any machine that had chezmoi initialized
+  before the Phase 3 commit needs the same two steps.
+- **`chezmoi apply <target>` needs an absolute path.** `managed` and
+  `source-path` accept a bare relative one; `apply` doesn't — it silently
+  "worked" in every prior test only because Converge's own process
+  happened to be started with `$HOME` as its working directory every
+  time (true on the VM, false when testing from a shell in
+  `~/dev/current/dotfiles`). `internal/repo.Apply` now joins every target
+  against the real destination directory before calling out; both
+  `internal/machinevars` and `internal/dfedit` route through it instead
+  of building their own `exec.Command` (machinevars was duplicating the
+  same bug, and skipping `CONVERGE_DEV_SOURCE`'s `--source` injection
+  entirely on top of it).
 
 **⚠️ `CONVERGE_DEV_SOURCE` only sandboxes reads, not runs.** It repoints
 the read-only chezmoi queries (status/managed/ignored/data) at a plain
@@ -148,4 +200,6 @@ where this repo has actually been applied via chezmoi (i.e. everywhere
 | `internal/machinevars` | how a layer's on/off state actually changes — edits `chezmoi.toml`, re-applies the dependent files |
 | `internal/ledger` | reads/writes `~/.local/state/converge/ledger.json` |
 | `internal/refcount` | diffs the ledger against active layers — what to actually remove, what to keep because another active layer still needs it |
+| `internal/dfedit` | the dotfiles source editor — read/write the source file, `chezmoi execute-template` preview, targeted apply |
+| `internal/envlocal` | reads/writes `~/.env.local` as structured Exports/PathVars |
 | `internal/webui` | HTTP handlers, templates, the Nocturne-based static assets |

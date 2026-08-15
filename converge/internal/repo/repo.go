@@ -84,11 +84,16 @@ func Detect() (*Repo, error) {
 	return &Repo{ChezmoiBin: bin, SourceDir: sourceDir, RootDir: root}, nil
 }
 
-func (r *Repo) run(args ...string) ([]byte, error) {
+func (r *Repo) run(args ...string) ([]byte, error) { return r.runStdin("", args...) }
+
+func (r *Repo) runStdin(stdin string, args ...string) ([]byte, error) {
 	if r.devSource != "" {
 		args = append([]string{"--source", r.devSource}, args...)
 	}
 	cmd := exec.Command(r.ChezmoiBin, args...)
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -96,6 +101,53 @@ func (r *Repo) run(args ...string) ([]byte, error) {
 		return nil, fmt.Errorf("repo: chezmoi %s: %w (%s)", strings.Join(args, " "), err, strings.TrimSpace(stderr.String()))
 	}
 	return stdout.Bytes(), nil
+}
+
+// SourcePathFor resolves a destination-relative target path (e.g.
+// ".bashrc.d/core/05-path.sh") to its absolute source file.
+func (r *Repo) SourcePathFor(targetRelPath string) (string, error) {
+	out, err := r.run("source-path", filepath.Join(r.destDirFallback(), targetRelPath))
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+// destDirFallback is $HOME — chezmoi's own default destination directory,
+// used to build an absolute target path for SourcePathFor (chezmoi wants
+// the full destination path, not the bare relative one).
+func (r *Repo) destDirFallback() string {
+	home, _ := os.UserHomeDir()
+	return home
+}
+
+// ExecuteTemplate renders template content through chezmoi's own template
+// engine, with this machine's real data — the only correct way to preview
+// a .tmpl file (see ansible/roles/README.md's spirit: never guess what a
+// template renders to, ask the tool that actually renders it).
+func (r *Repo) ExecuteTemplate(content string) (string, error) {
+	out, err := r.runStdin(content, "execute-template")
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
+}
+
+// Apply runs `chezmoi apply` targeted at specific destination paths — see
+// internal/machinevars for why targeted, never blanket.
+func (r *Repo) Apply(targetRelPaths ...string) error {
+	// `chezmoi apply` needs absolute paths (or paths relative to its own
+	// CWD) — unlike `managed`/`source-path`, a bare ".config/foo" is not
+	// resolved against the destination directory. Found the hard way: it
+	// silently "worked" wherever Converge's own process CWD happened to
+	// already be $HOME, and errored ("not managed") everywhere else.
+	home := r.destDirFallback()
+	args := []string{"apply"}
+	for _, p := range targetRelPaths {
+		args = append(args, filepath.Join(home, p))
+	}
+	_, err := r.run(args...)
+	return err
 }
 
 // DriftState is what changed on the machine since the last chezmoi apply,
