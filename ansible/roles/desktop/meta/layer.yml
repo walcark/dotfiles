@@ -1,11 +1,9 @@
 # Machine-readable manifest for the Converge UI (see ansible/roles/README.md).
 name: Desktop
-description: Kitty terminal themes
+description: (currently empty — kept as a slot for future desktop-only tasks)
 profiles: [client]
 requires: [core]
-tasks:
-  - id: kitty
-    kind: git
-    description: kovidgoyal and dexpota kitty theme repos
-    provides: [kitty-themes-kovidgoyal, kitty-themes-dexpota]
-    reversible: derived
+# No tasks: the kitty theme clones this role used to own are actually
+# unconditional chezmoi externals (.chezmoiexternal.toml.tmpl), applied on
+# every machine regardless of this flag — see tasks/main.yml.
+tasks: []

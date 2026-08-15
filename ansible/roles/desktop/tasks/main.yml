@@ -1,1 +1,7 @@
-- import_tasks: kitty.yml
+# No tasks: this role's only content (kitty theme clones) turned out to be
+# redundant with .chezmoiexternal.toml.tmpl, which chezmoi already applies
+# unconditionally on every machine, regardless of `layers.desktop` — found
+# while testing the first real VM bootstrap. Removed rather than left in
+# place, since a task that keeps re-cloning what an unrelated system already
+# owns is not something `layers.desktop` actually controls.
+[]
