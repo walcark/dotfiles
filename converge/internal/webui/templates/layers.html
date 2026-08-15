@@ -75,6 +75,7 @@
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
           <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent)">Tasks</div>
           <div style="flex:1;min-width:0;font-size:11px;color:rgba(233,233,237,.5)">{{.Detail.ReversibleLine}}</div>
+          <a href="/layers/add-task?layer={{.Detail.ID}}" class="btn btn-ghost" style="font-size:12px;gap:5px"><i class="ph ph-plus"></i>Add</a>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px;max-height:340px;overflow:auto">
           {{range .Detail.Tasks}}

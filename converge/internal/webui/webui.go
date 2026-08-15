@@ -31,6 +31,7 @@ import (
 	"github.com/walcark/dotfiles/converge/internal/rolemerge"
 	"github.com/walcark/dotfiles/converge/internal/runner"
 	"github.com/walcark/dotfiles/converge/internal/sandbox"
+	"github.com/walcark/dotfiles/converge/internal/taskauthor"
 )
 
 //go:embed templates/*.html
@@ -74,7 +75,7 @@ func iconFor(layerID string) string {
 // last one parsed wins for every page), so pages are kept in separate sets.
 func New(r *repo.Repo, pixiHome string) (*App, error) {
 	pages := map[string]*template.Template{}
-	for _, page := range []string{"overview", "dotfiles", "run", "layers", "sourceedits"} {
+	for _, page := range []string{"overview", "dotfiles", "run", "layers", "sourceedits", "addtask"} {
 		tmpl, err := template.ParseFS(templateFS, "templates/layout.html", "templates/"+page+".html")
 		if err != nil {
 			return nil, fmt.Errorf("webui: parse templates for %s: %w", page, err)
@@ -102,6 +103,8 @@ func (a *App) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("/dotfiles/edit/save", a.handleDotfilesEditSave)
 	mux.HandleFunc("/source-edits", a.handleSourceEdits)
 	mux.HandleFunc("/source-edits/merge", a.handleMergeRoles)
+	mux.HandleFunc("/layers/add-task", a.handleAddTask)
+	mux.HandleFunc("/layers/add-task/create", a.handleAddTaskCreate)
 }
 
 // updateLedger runs after every successful Apply — see runner.Manager's
@@ -856,81 +859,210 @@ func (a *App) handleSourceEdits(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
+// pipelineResult is the outcome of runAuthoringPipeline — every authoring
+// flow (merge, add task, and whatever comes after) renders the same way,
+// so they all funnel through this one shape.
+type pipelineResult struct {
+	Branch, Stage, Error, SandboxOutput, PRURL string
+	LeftOnBranch                               bool
+}
+
+func (r pipelineResult) asMap() map[string]any {
+	m := map[string]any{}
+	if r.Branch != "" {
+		m["Branch"] = r.Branch
+	}
+	if r.Stage != "" {
+		m["Stage"] = r.Stage
+	}
+	if r.Error != "" {
+		m["Error"] = r.Error
+	}
+	if r.SandboxOutput != "" {
+		m["SandboxOutput"] = r.SandboxOutput
+	}
+	if r.PRURL != "" {
+		m["PRURL"] = r.PRURL
+	}
+	if r.LeftOnBranch {
+		m["LeftOnBranch"] = true
+	}
+	return m
+}
+
+// runAuthoringPipeline is every Phase 6 authoring flow's shared spine:
+// branch, apply the caller's edits, sandbox-test, commit, push, open a
+// PR, switch back to main. apply is called once, on the fresh branch —
+// see internal/rolemerge.Apply and internal/taskauthor.Apply for the two
+// current callers. A failure at any stage after the branch exists leaves
+// it checked out with whatever apply wrote, uncommitted, for inspection.
+func (a *App) runAuthoringPipeline(branchSlug, commitMessage, prTitle, prBody string, apply func() error) pipelineResult {
+	var r pipelineResult
+
+	branch, err := authoring.NewBranch(a.Repo.RootDir, branchSlug)
+	if err != nil {
+		r.Stage, r.Error = "create branch", err.Error()
+		return r
+	}
+	r.Branch = branch
+
+	if err := apply(); err != nil {
+		r.LeftOnBranch = true
+		r.Stage, r.Error = "apply", err.Error()
+		return r
+	}
+
+	sandboxResult, err := sandbox.Run(a.Repo.RootDir)
+	r.SandboxOutput = sandboxResult.Output
+	if err != nil {
+		r.LeftOnBranch = true
+		r.Stage, r.Error = "sandbox test", err.Error()
+		return r
+	}
+	if !sandboxResult.OK {
+		r.LeftOnBranch = true
+		r.Stage, r.Error = "sandbox test", "syntax check failed in the container — see output below"
+		return r
+	}
+
+	if err := authoring.Commit(a.Repo.RootDir, commitMessage); err != nil {
+		r.LeftOnBranch = true
+		r.Stage, r.Error = "commit", err.Error()
+		return r
+	}
+	if err := authoring.Push(a.Repo.RootDir, branch); err != nil {
+		r.LeftOnBranch = true
+		r.Stage, r.Error = "push", err.Error()
+		return r
+	}
+	prURL, err := authoring.OpenPR(a.Repo.RootDir, branch, prTitle, prBody)
+	if err != nil {
+		r.LeftOnBranch = true
+		r.Stage, r.Error = "open PR", err.Error()
+		return r
+	}
+	r.PRURL = prURL
+
+	if err := authoring.CheckoutMain(a.Repo.RootDir); err != nil {
+		// Non-fatal: the PR already exists. Surfacing this as the
+		// pipeline's Error would misreport a success as a failure, so it
+		// rides in Stage instead, purely informational.
+		r.Stage = "checked out main afterward: " + err.Error()
+	}
+	return r
+}
+
 func (a *App) handleMergeRoles(w http.ResponseWriter, req *http.Request) {
 	from := req.FormValue("from")
 	into := req.FormValue("into")
 
-	result := map[string]any{
+	base := map[string]any{
 		"Title": "Merge result", "Kicker": "authoring",
 		"Nav": navFor("Source edits"), "Machine": a.machine(),
 		"From": from, "Into": into,
 	}
-	fail := func(stage, errMsg string) {
-		result["Stage"] = stage
-		result["Error"] = errMsg
-		a.render(w, "sourceedits", result)
+
+	layers, err := manifest.LoadAll(a.Repo.RootDir)
+	if err != nil {
+		base["Stage"], base["Error"] = "load manifests", err.Error()
+		a.render(w, "sourceedits", base)
+		return
+	}
+	if err := rolemerge.Check(a.Repo.RootDir, layers, from, into); err != nil {
+		base["Stage"], base["Error"] = "guardrail check", err.Error()
+		a.render(w, "sourceedits", base)
+		return
+	}
+
+	result := a.runAuthoringPipeline(
+		"merge-"+from+"-into-"+into,
+		fmt.Sprintf("refactor: merge %s into %s\n\nGenerated by Converge's role-merge authoring flow.", from, into),
+		fmt.Sprintf("Merge %s into %s", from, into),
+		fmt.Sprintf("Merges the `%s` role into `%s`, generated and sandbox-tested by Converge's authoring flow. Nothing has been applied to any machine — review the diff before merging.", from, into),
+		func() error { return rolemerge.Apply(a.Repo.RootDir, layers, from, into) },
+	)
+	for k, v := range result.asMap() {
+		base[k] = v
+	}
+	a.render(w, "sourceedits", base)
+}
+
+// — Add a task (Layers detail panel) —
+
+// handleAddTask serves both composer steps: no ?kind yet shows the kind
+// picker (mockup's segmented control), ?kind=X shows the full form with
+// Generate's pre-fill for that kind. Two GETs instead of one page with
+// client-side switching, so picking a kind needs no JavaScript — see
+// converge/README.md's Phase 1 note on staying JS-free where the design
+// doesn't specifically call for live updates.
+func (a *App) handleAddTask(w http.ResponseWriter, req *http.Request) {
+	layerID := req.URL.Query().Get("layer")
+	kind := req.URL.Query().Get("kind")
+
+	data := map[string]any{
+		"Title": "Add a task", "Kicker": "authoring",
+		"Nav": navFor("Layers"), "Machine": a.machine(),
+		"LayerID": layerID, "Kind": kind, "Kinds": taskauthor.Kinds,
+	}
+
+	if kind != "" {
+		field1 := req.URL.Query().Get("field1")
+		field2 := req.URL.Query().Get("field2")
+		field1Label, field2Label := taskauthor.FieldLabels(kind)
+		gen := taskauthor.Generate(kind, field1, field2)
+		data["Field1Label"], data["Field2Label"] = field1Label, field2Label
+		data["Field1"], data["Field2"] = field1, field2
+		data["TaskYAML"] = gen.TaskYAML
+		data["AbsentYAML"] = gen.AbsentYAML
+		data["Description"] = gen.Description
+		data["Provides"] = gen.Provides
+	}
+
+	a.render(w, "addtask", data)
+}
+
+func (a *App) handleAddTaskCreate(w http.ResponseWriter, req *http.Request) {
+	in := taskauthor.Input{
+		LayerID:     req.FormValue("layer"),
+		TaskID:      strings.TrimSpace(req.FormValue("id")),
+		Kind:        req.FormValue("kind"),
+		Description: req.FormValue("description"),
+		TaskYAML:    req.FormValue("task_yaml"),
+		AbsentYAML:  req.FormValue("absent_yaml"),
+	}
+	for _, p := range strings.Split(req.FormValue("provides"), ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			in.Provides = append(in.Provides, p)
+		}
+	}
+
+	base := map[string]any{
+		"Title": "Add task result", "Kicker": "authoring",
+		"Nav": navFor("Source edits"), "Machine": a.machine(),
+		"From": in.TaskID, "Into": in.LayerID,
 	}
 
 	layers, err := manifest.LoadAll(a.Repo.RootDir)
 	if err != nil {
-		fail("load manifests", err.Error())
+		base["Stage"], base["Error"] = "load manifests", err.Error()
+		a.render(w, "sourceedits", base)
 		return
 	}
-	if err := rolemerge.Check(a.Repo.RootDir, layers, from, into); err != nil {
-		fail("guardrail check", err.Error())
-		return
-	}
-
-	branch, err := authoring.NewBranch(a.Repo.RootDir, "merge-"+from+"-into-"+into)
-	if err != nil {
-		fail("create branch", err.Error())
-		return
-	}
-	result["Branch"] = branch
-
-	if err := rolemerge.Apply(a.Repo.RootDir, layers, from, into); err != nil {
-		result["LeftOnBranch"] = true
-		fail("apply merge", err.Error())
+	if err := taskauthor.Check(layers, in); err != nil {
+		base["Stage"], base["Error"] = "guardrail check", err.Error()
+		a.render(w, "sourceedits", base)
 		return
 	}
 
-	sandboxResult, err := sandbox.Run(a.Repo.RootDir)
-	result["SandboxOutput"] = sandboxResult.Output
-	if err != nil {
-		result["LeftOnBranch"] = true
-		fail("sandbox test", err.Error())
-		return
+	result := a.runAuthoringPipeline(
+		"add-"+in.TaskID+"-to-"+in.LayerID,
+		fmt.Sprintf("feat: add %s task to %s\n\nGenerated by Converge's add-task authoring flow.", in.TaskID, in.LayerID),
+		fmt.Sprintf("Add %s task to %s", in.TaskID, in.LayerID),
+		fmt.Sprintf("Adds the `%s` task (kind: %s) to `%s`, sandbox-tested by Converge's authoring flow. Nothing has been applied to any machine — review the diff before merging.", in.TaskID, in.Kind, in.LayerID),
+		func() error { return taskauthor.Apply(a.Repo.RootDir, layers, in) },
+	)
+	for k, v := range result.asMap() {
+		base[k] = v
 	}
-	if !sandboxResult.OK {
-		result["LeftOnBranch"] = true
-		fail("sandbox test", "syntax check failed in the container — see output below")
-		return
-	}
-
-	message := fmt.Sprintf("refactor: merge %s into %s\n\nGenerated by Converge's role-merge authoring flow.", from, into)
-	if err := authoring.Commit(a.Repo.RootDir, message); err != nil {
-		result["LeftOnBranch"] = true
-		fail("commit", err.Error())
-		return
-	}
-	if err := authoring.Push(a.Repo.RootDir, branch); err != nil {
-		result["LeftOnBranch"] = true
-		fail("push", err.Error())
-		return
-	}
-	prURL, err := authoring.OpenPR(a.Repo.RootDir, branch,
-		fmt.Sprintf("Merge %s into %s", from, into),
-		fmt.Sprintf("Merges the `%s` role into `%s`, generated and sandbox-tested by Converge's authoring flow. Nothing has been applied to any machine — review the diff before merging.", from, into))
-	if err != nil {
-		result["LeftOnBranch"] = true
-		fail("open PR", err.Error())
-		return
-	}
-	result["PRURL"] = prURL
-
-	if err := authoring.CheckoutMain(a.Repo.RootDir); err != nil {
-		result["CheckoutMainError"] = err.Error()
-	}
-
-	a.render(w, "sourceedits", result)
+	a.render(w, "sourceedits", base)
 }

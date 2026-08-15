@@ -126,12 +126,38 @@ sitting latent in Phases 3–4's code:
   same bug, and skipping `CONVERGE_DEV_SOURCE`'s `--source` injection
   entirely on top of it).
 
-## Phase 6 — authoring: role merges, on a branch, sandbox-tested, opened as a PR
+## Phase 6 — authoring: add a task, role merges, on a branch, sandbox-tested, opened as a PR
 
-The Source edits screen does one authoring operation end to end: merge
-role A into role B. Nothing here ever touches `main` directly or applies
-anything to a machine — the whole point is the same one the design states
-for it: a merge "leaves as a PR without opening an editor."
+Two authoring operations, both funneled through the same pipeline
+(`App.runAuthoringPipeline`, factored out once a second flow needed it):
+branch, apply the caller's edits, sandbox-test, commit, push, open a PR,
+switch back to `main`. Nothing here ever touches `main` directly or
+applies anything to a machine.
+
+**Add a task** lives in the Layers detail panel (the "Add" button next to
+Tasks) — the composer the design specs: pick a kind (pixi, flatpak, git
+repo, command, write my own), `internal/taskauthor.Generate` pre-fills
+Task YAML and Uninstall YAML from the two kind-specific fields (a
+generic `flatpak: state: latest/absent` pair, a `pixi_tools` include for
+pixi, an unreversible `git` clone, ...), then it's a plain textarea —
+edit it and your text wins, same as the mockup's own rule. An empty
+Uninstall YAML means the task isn't reversible (`reversible: none`),
+shown in red rather than silently accepted.
+
+No JavaScript, so "generate from these two fields" is its own step: the
+field inputs belong to a second, hidden `<form id="genform" method="get">`
+via HTML's `form="genform"` attribute rather than the visible create
+form, so clicking "Regenerate YAML" reloads the page with `?field1=&field2=`
+and a freshly generated fill, without touching whatever's already been
+typed into the YAML panes directly. `internal/taskauthor.Apply` writes
+`tasks/<id>.yml` (and `tasks/absent_<id>.yml` if reversible, with the same
+`absent_skip` guard every other task's absent file carries), appends the
+import lines, and adds the task to `meta/layer.yml` — the same structure
+Phase 0 established by hand, produced here from a form instead.
+
+Role merges: the Source edits screen does the second authoring operation
+end to end: merge role A into role B — the design's own "done when": a
+merge "leaves as a PR without opening an editor."
 
 `internal/rolemerge.Check` runs the design's own guardrails before
 anything is written: `core` refused as either a merge target (the
@@ -273,5 +299,6 @@ where this repo has actually been applied via chezmoi (i.e. everywhere
 | `internal/envlocal` | reads/writes `~/.env.local` as structured Exports/PathVars |
 | `internal/authoring` | git plumbing shared by every authoring flow — branch, commit, push, `gh pr create` |
 | `internal/rolemerge` | merge-role guardrails and the file surgery itself |
+| `internal/taskauthor` | the add-a-task composer's YAML generator and file writes |
 | `internal/sandbox` | the containerized "Sandbox apply" test gate |
 | `internal/webui` | HTTP handlers, templates, the Nocturne-based static assets |
