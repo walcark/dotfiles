@@ -1,7 +1,15 @@
 # Compile smoke-test: prove the Go toolchain installed above can build and run
 # a program end-to-end. Nothing persists — the workspace lives in a temp dir
 # and is removed in `always`, so this is pure verification, not managed state.
+#
+# check_mode: false — found running Converge's own --check dry run: the
+# tempfile module doesn't support check mode, so go_smoke_dir was never
+# set and every task after it failed on `.path`. Forcing this block to
+# always run for real is correct, not a workaround: it never persists
+# anything, so there is nothing check mode is supposed to be protecting
+# here.
 - name: Verify Go toolchain
+  check_mode: false
   block:
     - name: Create temporary Go workspace
       ansible.builtin.tempfile:

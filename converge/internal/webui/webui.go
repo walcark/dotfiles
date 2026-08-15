@@ -21,6 +21,7 @@ import (
 	"github.com/walcark/dotfiles/converge/internal/manifest"
 	"github.com/walcark/dotfiles/converge/internal/pixiglobal"
 	"github.com/walcark/dotfiles/converge/internal/repo"
+	"github.com/walcark/dotfiles/converge/internal/runner"
 )
 
 //go:embed templates/*.html
@@ -34,6 +35,7 @@ var staticFS embed.FS
 // local tool, and showing stale state would defeat Phase 1's entire point.
 type App struct {
 	Repo     *repo.Repo
+	Runner   *runner.Manager
 	pages    map[string]*template.Template
 	pixiHome string
 }
@@ -63,14 +65,14 @@ func iconFor(layerID string) string {
 // last one parsed wins for every page), so pages are kept in separate sets.
 func New(r *repo.Repo, pixiHome string) (*App, error) {
 	pages := map[string]*template.Template{}
-	for _, page := range []string{"overview", "dotfiles"} {
+	for _, page := range []string{"overview", "dotfiles", "run"} {
 		tmpl, err := template.ParseFS(templateFS, "templates/layout.html", "templates/"+page+".html")
 		if err != nil {
 			return nil, fmt.Errorf("webui: parse templates for %s: %w", page, err)
 		}
 		pages[page] = tmpl
 	}
-	return &App{Repo: r, pages: pages, pixiHome: pixiHome}, nil
+	return &App{Repo: r, Runner: runner.NewManager(r), pages: pages, pixiHome: pixiHome}, nil
 }
 
 // Routes registers the app's handlers on mux.
@@ -79,6 +81,9 @@ func (a *App) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("/", a.handleOverview)
 	mux.HandleFunc("/overview", a.handleOverview)
 	mux.HandleFunc("/dotfiles", a.handleDotfiles)
+	mux.HandleFunc("/run", a.handleRun)
+	mux.HandleFunc("/run/check", a.handleRunCheck)
+	mux.HandleFunc("/run/apply", a.handleRunApply)
 }
 
 // — shared shell data —
@@ -105,7 +110,7 @@ func navFor(active string) []navItem {
 		{Label: "Source edits", Icon: "git-diff", Badge: "Phase 6"},
 		{Label: "Dotfiles", Icon: "folder-notch", Href: "/dotfiles", Enabled: true},
 		{Label: "Machines", Icon: "hard-drives", Badge: "Phase 3"},
-		{Label: "Run log", Icon: "terminal-window", Badge: "Phase 2"},
+		{Label: "Run log", Icon: "terminal-window", Href: "/run", Enabled: true},
 	}
 	for i := range items {
 		if items[i].Enabled && strings.EqualFold(items[i].Label, active) {
@@ -386,4 +391,93 @@ func (a *App) handleDotfiles(w http.ResponseWriter, req *http.Request) {
 	}
 
 	a.render(w, "dotfiles", data)
+}
+
+// — Run log —
+
+type logLineVM struct{ Text, Color string }
+
+func (a *App) handleRun(w http.ResponseWriter, req *http.Request) {
+	data := map[string]any{
+		"Title": "Run log", "Kicker": "ansible-playbook",
+		"Nav": navFor("Run log"), "Machine": a.machine(),
+	}
+
+	run, ok := a.Runner.Current()
+	if !ok {
+		data["HasRun"] = false
+		a.render(w, "run", data)
+		return
+	}
+	snap := run.Snapshot()
+
+	stats := struct{ OK, Changed, Failed, Skipped int }{}
+	var lines []logLineVM
+	for _, e := range snap.Events {
+		switch e.Event {
+		case "play_start":
+			lines = append(lines, logLineVM{Text: "PLAY [" + e.Play + "]", Color: "rgba(233,233,237,.55)"})
+		case "task_start":
+			lines = append(lines, logLineVM{Text: "» " + e.Task, Color: "#9184d9"})
+		case "result":
+			text := e.Status + ": " + e.Task
+			if e.Msg != "" {
+				text += " — " + e.Msg
+			}
+			color := "rgba(233,233,237,.55)"
+			switch e.Status {
+			case "ok":
+				color = "#7fb98a"
+			case "changed":
+				color = "#b5abfc"
+			case "failed", "unreachable":
+				color = "#e0a9a9"
+			}
+			lines = append(lines, logLineVM{Text: text, Color: color})
+		case "stats":
+			stats.OK, stats.Changed, stats.Failed, stats.Skipped = e.OK, e.Changed, e.Failed, e.Skipped
+			lines = append(lines, logLineVM{
+				Text:  fmt.Sprintf("PLAY RECAP: ok=%d changed=%d failed=%d skipped=%d unreachable=%d", e.OK, e.Changed, e.Failed, e.Skipped, e.Unreachable),
+				Color: "rgba(233,233,237,.7)",
+			})
+		}
+	}
+
+	headIcon, headColor, headTitle := "ph-circle-notch", "var(--color-accent)", "Running…"
+	switch snap.State {
+	case runner.StateOK:
+		headIcon, headColor, headTitle = "ph-check-circle", "#7fb98a", "Finished"
+	case runner.StateFailed:
+		headIcon, headColor, headTitle = "ph-x-circle", "#e0a9a9", "Failed"
+	}
+
+	data["HasRun"] = true
+	data["Running"] = snap.State == runner.StateRunning
+	data["ID"] = snap.ID
+	data["Mode"] = snap.Mode
+	data["Stage"] = snap.Stage
+	data["Err"] = snap.Err
+	data["HeadIcon"] = headIcon
+	data["HeadColor"] = template.CSS(headColor)
+	data["HeadTitle"] = headTitle
+	data["Stats"] = stats
+	data["Lines"] = lines
+
+	a.render(w, "run", data)
+}
+
+func (a *App) handleRunCheck(w http.ResponseWriter, req *http.Request) {
+	if _, err := a.Runner.StartCheck(); err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+	http.Redirect(w, req, "/run", http.StatusSeeOther)
+}
+
+func (a *App) handleRunApply(w http.ResponseWriter, req *http.Request) {
+	if _, err := a.Runner.StartApply(); err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+	http.Redirect(w, req, "/run", http.StatusSeeOther)
 }

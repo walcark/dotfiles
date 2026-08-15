@@ -24,16 +24,43 @@ type Repo struct {
 	ChezmoiBin string
 	SourceDir  string // e.g. ~/.local/share/chezmoi/home
 	RootDir    string // e.g. ~/.local/share/chezmoi — contains ansible/, install.sh
+
+	// devSource, when set, is passed as `--source` on every chezmoi call —
+	// see Detect's CONVERGE_DEV_SOURCE handling. It points chezmoi straight
+	// at a plain working copy (no init, no clone, no commit even required)
+	// so day-to-day development doesn't need a push to be visible.
+	devSource string
 }
 
-// Detect finds chezmoi on PATH and asks it where its source directory is,
-// then walks up from there to find the repo root (the first ancestor that
-// has an ansible/ directory next to it — see .chezmoiroot in the source
-// tree, which is what makes SourceDir a subdirectory of RootDir here).
+// Detect finds the repo Converge should read.
+//
+// If CONVERGE_DEV_SOURCE is set (to a working copy of this repo, e.g.
+// ~/dev/current/dotfiles), it's used directly — chezmoi reads it in place
+// via --source, compared against the real destination directory ($HOME),
+// with no init/clone/commit/push involved. This is the fast loop for
+// developing Converge itself or the ansible/roles manifests.
+//
+// Otherwise, it asks the system chezmoi where its source directory is (the
+// machine's actual applied dotfiles) and walks up from there to find the
+// repo root — the first ancestor with an ansible/ directory next to it,
+// which is what .chezmoiroot in the source tree makes SourceDir a
+// subdirectory of.
 func Detect() (*Repo, error) {
 	bin, err := exec.LookPath("chezmoi")
 	if err != nil {
 		return nil, fmt.Errorf("repo: chezmoi not found on PATH: %w", err)
+	}
+
+	if dev := os.Getenv("CONVERGE_DEV_SOURCE"); dev != "" {
+		root, err := filepath.Abs(dev)
+		if err != nil {
+			return nil, fmt.Errorf("repo: CONVERGE_DEV_SOURCE %q: %w", dev, err)
+		}
+		if info, err := os.Stat(filepath.Join(root, "ansible")); err != nil || !info.IsDir() {
+			return nil, fmt.Errorf("repo: CONVERGE_DEV_SOURCE %q has no ansible/ directory", root)
+		}
+		sourceDir := filepath.Join(root, "home") // matches this repo's .chezmoiroot ("home")
+		return &Repo{ChezmoiBin: bin, SourceDir: sourceDir, RootDir: root, devSource: sourceDir}, nil
 	}
 
 	out, err := exec.Command(bin, "source-path").Output()
@@ -58,6 +85,9 @@ func Detect() (*Repo, error) {
 }
 
 func (r *Repo) run(args ...string) ([]byte, error) {
+	if r.devSource != "" {
+		args = append([]string{"--source", r.devSource}, args...)
+	}
 	cmd := exec.Command(r.ChezmoiBin, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

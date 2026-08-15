@@ -44,6 +44,10 @@ func main() {
 	url := fmt.Sprintf("http://%s/", ln.Addr())
 
 	fmt.Printf("Converge — repo %s\n", r.RootDir)
+	if os.Getenv("CONVERGE_DEV_SOURCE") != "" {
+		fmt.Println("  (dev mode: reading straight from CONVERGE_DEV_SOURCE, no chezmoi init needed)")
+		fmt.Println("  Runs are NOT sandboxed by this: Check/Apply always target the real machine.")
+	}
 	fmt.Printf("Serving on %s (Ctrl-C to stop)\n", url)
 	openBrowser(url)
 
