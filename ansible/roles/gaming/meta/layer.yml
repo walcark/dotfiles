@@ -1,21 +1,32 @@
 # Machine-readable manifest for the Converge UI (see ansible/roles/README.md).
 name: Gaming
 description: Steam, Lutris, Discord — kept at latest
-profiles: [client]
-requires: [core]
+profiles:
+    - client
+requires:
+    - core
 tasks:
-  - id: steam
-    kind: flatpak
-    description: Steam, kept at latest
-    provides: [com.valvesoftware.Steam]
-    reversible: derived
-  - id: lutris
-    kind: flatpak
-    description: Lutris, kept at latest
-    provides: [net.lutris.Lutris]
-    reversible: derived
-  - id: discord
-    kind: flatpak
-    description: Discord, kept at latest
-    provides: [com.discordapp.Discord]
-    reversible: derived
+    - id: steam
+      kind: flatpak
+      description: Steam, kept at latest
+      provides:
+        - com.valvesoftware.Steam
+      reversible: derived
+    - id: lutris
+      kind: flatpak
+      description: Lutris, kept at latest
+      provides:
+        - net.lutris.Lutris
+      reversible: derived
+    - id: discord
+      kind: flatpak
+      description: Discord, kept at latest
+      provides:
+        - com.discordapp.Discord
+      reversible: derived
+    - id: krita
+      kind: flatpak
+      description: Krita, kept at latest
+      provides:
+        - org.kde.krita
+      reversible: derived

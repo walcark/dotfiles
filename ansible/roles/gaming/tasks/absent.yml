@@ -6,3 +6,9 @@
   when: "'lutris' not in (absent_skip | default([]))"
 - import_tasks: absent_steam.yml
   when: "'steam' not in (absent_skip | default([]))"
+
+# — merged from drawing —
+# Inverse of drawing/tasks/main.yml. `absent_skip` — see
+# core/tasks/absent.yml's header comment.
+- import_tasks: absent_krita.yml
+  when: "'krita' not in (absent_skip | default([]))"

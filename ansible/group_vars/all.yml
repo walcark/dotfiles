@@ -10,7 +10,6 @@ layers:
   desktop: true
   gnome: false
   gaming: true
-  drawing: false
   hpc: false
   dev: true
   homelab: false
