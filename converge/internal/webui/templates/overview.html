@@ -1,0 +1,54 @@
+{{define "content"}}
+<div class="stat-grid">
+  {{range .Stats}}
+    <div class="card elev-sm stat-tile">
+      <div class="stat-label">{{.Label}}</div>
+      <div class="stat-value-row">
+        <div class="stat-value" style="color:{{.Color}}">{{.Value}}</div>
+        <div class="stat-unit">{{.Unit}}</div>
+      </div>
+    </div>
+  {{end}}
+</div>
+
+<div class="overview-grid">
+  <section>
+    <div class="section-head">
+      <h4>Local drift</h4>
+      <span class="hint">files changed on this machine since the last apply</span>
+    </div>
+    <div class="drift-list">
+      {{if .Drift}}
+        {{range .Drift}}
+          <div class="drift-row">
+            <i class="ph ph-{{.Icon}} state-icon" style="color:{{.Color}}"></i>
+            <div style="flex:1;min-width:0">
+              <div class="path">{{.Path}}</div>
+              <div class="note">{{.Note}}</div>
+            </div>
+            <span class="tag {{.TagClass}}">{{.State}}</span>
+          </div>
+        {{end}}
+      {{else}}
+        <div class="drift-empty">No drift — this machine matches the last apply.</div>
+      {{end}}
+    </div>
+  </section>
+
+  <section>
+    <h4 style="margin:0 0 9px;font-size:16px">Active layers</h4>
+    <div class="card elev-sm layer-list">
+      {{range .ActiveLayers}}
+        <div class="layer-row">
+          <i class="ph ph-{{.Icon}}"></i>
+          <div class="name">{{.Name}}</div>
+          <div class="count">{{.PackageCount}} pkg</div>
+        </div>
+      {{end}}
+      <a class="btn btn-primary btn-block" style="justify-content:center" href="/layers">
+        <i class="ph ph-sliders-horizontal"></i>&nbsp;Manage layers
+      </a>
+    </div>
+  </section>
+</div>
+{{end}}
