@@ -46,7 +46,7 @@ func Run(repoRoot string) (Result, error) {
 		// "couldn't resolve module/action", indistinguishable at a glance
 		// from an actual typo. Found the same way as the :z mount fix:
 		// running this against a real merge branch, not guessed upfront.
-		"ansible-galaxy collection install -q community.general >/dev/null",
+		"ansible-galaxy collection install community.general >/dev/null",
 		"cd /repo",
 		"ansible-playbook --syntax-check ansible/playbook.yml",
 		"ansible-playbook --syntax-check ansible/absent.yml",
