@@ -1,0 +1,51 @@
+{{define "content"}}
+{{if .PRURL}}
+  <div class="card elev-sm" style="padding:22px;align-items:flex-start;gap:8px;margin-bottom:16px">
+    <i class="ph ph-check-circle" style="font-size:22px;color:#7fb98a"></i>
+    <div style="font-family:var(--font-heading);font-size:17px">Merged {{.From}} into {{.Into}} — opened as a PR</div>
+    <p style="margin:0;font-size:13px;color:rgba(233,233,237,.65)">Branch <code>{{.Branch}}</code>, pushed and tested in a sandbox container. Nothing was applied to any machine.</p>
+    <a href="{{.PRURL}}" class="btn btn-primary" style="gap:7px"><i class="ph ph-git-pull-request"></i>{{.PRURL}}</a>
+  </div>
+{{else if .Error}}
+  <div class="card elev-sm" style="padding:22px;align-items:flex-start;gap:8px;margin-bottom:16px">
+    <i class="ph ph-x-circle" style="font-size:22px;color:#e0a9a9"></i>
+    <div style="font-family:var(--font-heading);font-size:17px">Failed at: {{.Stage}}</div>
+    <p style="margin:0;font-size:13px;color:rgba(233,233,237,.65);white-space:pre-wrap">{{.Error}}</p>
+    {{if .LeftOnBranch}}<p style="margin:0;font-size:12.5px;color:rgba(233,233,237,.5)">Left on branch <code>{{.Branch}}</code>, uncommitted, for inspection — nothing was pushed.</p>{{end}}
+  </div>
+{{end}}
+
+{{if .SandboxOutput}}
+  <div style="border-radius:10px;background:#12141f;padding:14px 16px;font:12px/1.6 ui-monospace,Menlo,monospace;white-space:pre-wrap;color:rgba(233,233,237,.75);margin-bottom:16px;max-height:300px;overflow:auto">{{.SandboxOutput}}</div>
+{{end}}
+
+<div class="card elev-sm" style="padding:20px;gap:14px;max-width:560px">
+  <div style="font-family:var(--font-heading);font-size:17px">Merge a role into another</div>
+  <p style="margin:0;font-size:13px;color:rgba(233,233,237,.6);line-height:1.5">
+    Moves every task from the source role into the target, merges their manifests, updates
+    <code>playbook.yml</code>, <code>group_vars/all.yml</code> and <code>absent.yml</code>, deletes the
+    source role directory — all on a fresh branch, tested in a throwaway container, and opened as a PR.
+    <code>core</code> is refused as a target; a role another role still references is refused as a source.
+  </p>
+  <form method="post" action="/source-edits/merge">
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center">
+      <div class="field">
+        <label>Merge this role…</label>
+        <select name="from" class="input">
+          {{range .Layers}}{{if ne .ID "core"}}<option value="{{.ID}}">{{.Name}}</option>{{end}}{{end}}
+        </select>
+      </div>
+      <i class="ph ph-arrow-right" style="margin-top:18px"></i>
+      <div class="field">
+        <label>…into this one</label>
+        <select name="into" class="input">
+          {{range .Layers}}{{if ne .ID "core"}}<option value="{{.ID}}">{{.Name}}</option>{{end}}{{end}}
+        </select>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-top:14px"><i class="ph ph-arrows-merge"></i>&nbsp;Merge, test, open PR</button>
+  </form>
+</div>
+
+<p style="margin-top:18px;font-size:11.5px;color:rgba(233,233,237,.4)">Currently on <code>{{.Branch}}</code>{{if .Dirty}} — uncommitted changes present{{end}}.</p>
+{{end}}

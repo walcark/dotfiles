@@ -4,7 +4,7 @@ A single Go binary that serves the Converge UI on `127.0.0.1:<random port>`
 and opens the default browser — see the design handoff (`ansible/roles/README.md`
 and the Phase 0 commit) for the project's overall shape.
 
-## Status: Phase 5 (+ Overview, Dotfiles, Runs, Layers, editors)
+## Status: Phase 6 — every screen the design specs
 
 Overview, Dotfiles, Run log and Layers are wired up. Source edits and
 Machines are still disabled placeholders, tagged with the phase that
@@ -126,6 +126,50 @@ sitting latent in Phases 3–4's code:
   same bug, and skipping `CONVERGE_DEV_SOURCE`'s `--source` injection
   entirely on top of it).
 
+## Phase 6 — authoring: role merges, on a branch, sandbox-tested, opened as a PR
+
+The Source edits screen does one authoring operation end to end: merge
+role A into role B. Nothing here ever touches `main` directly or applies
+anything to a machine — the whole point is the same one the design states
+for it: a merge "leaves as a PR without opening an editor."
+
+`internal/rolemerge.Check` runs the design's own guardrails before
+anything is written: `core` refused as either a merge target (the
+comment in `core/tasks/pixi.yml` already documents it as the only
+permitted cross-role dependency — merging into it would make that
+ambiguous) or a source (unconditional in `playbook.yml`, owns
+`reversible: none` tasks a generic move would mishandle); a task id
+collision between the two roles; another role still referencing the
+source via `include_role`/`import_role` (grepped for directly, the same
+way `core` is the only name anything currently references).
+
+`internal/rolemerge.Apply` moves the source's local task files
+(`tasks/<id>.yml`, `tasks/absent_<id>.yml`) into the target, appends its
+`tasks/main.yml` / `tasks/absent.yml` / `defaults/main.yml` content
+(delegated tasks — like dev's `pixi`, which has no local file, only an
+`include_role: {name: core, ...}` call — need nothing moved; their import
+line names `core`, untouched by the merge, and travels over as plain
+text), merges `meta/layer.yml`'s `tasks:` list, then edits
+`ansible/playbook.yml`, `group_vars/all.yml` and `absent.yml` to drop the
+source's entries, and deletes its role directory.
+
+`internal/authoring` is the git plumbing every authoring operation shares
+(not merge-specific): refuse on a dirty tree, branch, commit, push,
+`gh pr create`. `internal/sandbox` is the design's "Sandbox apply" test
+gate — `podman run --rm fedora:42`, mounting the branch read-only,
+`dnf install ansible-core` fresh, `--syntax-check` on both playbooks. Not
+a full simulated apply: most tasks shell out to pixi/chezmoi/flatpak,
+none of which exist in a bare fedora image, so a full `--check` run
+inside the container would fail every one of them for reasons that have
+nothing to do with whether the merge is correct. Worth a container image
+that actually bootstraps those tools first — not pretended here.
+
+A failed merge (bad guardrail, sandbox failure) leaves the branch
+checked out with the attempted changes uncommitted, for inspection —
+`git checkout main -- .` in the source tree discards it. A successful one
+commits, pushes, opens the PR, and switches back to `main` (safe by then:
+everything's committed and pushed, nothing left uncommitted to lose).
+
 **⚠️ `CONVERGE_DEV_SOURCE` only sandboxes reads, not runs.** It repoints
 the read-only chezmoi queries (status/managed/ignored/data) at a plain
 working copy for fast iteration — but Check and Apply on the Run log page
@@ -202,4 +246,7 @@ where this repo has actually been applied via chezmoi (i.e. everywhere
 | `internal/refcount` | diffs the ledger against active layers — what to actually remove, what to keep because another active layer still needs it |
 | `internal/dfedit` | the dotfiles source editor — read/write the source file, `chezmoi execute-template` preview, targeted apply |
 | `internal/envlocal` | reads/writes `~/.env.local` as structured Exports/PathVars |
+| `internal/authoring` | git plumbing shared by every authoring flow — branch, commit, push, `gh pr create` |
+| `internal/rolemerge` | merge-role guardrails and the file surgery itself |
+| `internal/sandbox` | the containerized "Sandbox apply" test gate |
 | `internal/webui` | HTTP handlers, templates, the Nocturne-based static assets |

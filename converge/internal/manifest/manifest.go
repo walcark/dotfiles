@@ -1,6 +1,8 @@
-// Package manifest reads the ansible/roles/*/meta/layer.yml manifests added
-// in Phase 0 of the Converge project (see ansible/roles/README.md for the
-// schema). It is read-only: nothing here writes to the repo.
+// Package manifest reads and writes the ansible/roles/*/meta/layer.yml
+// manifests added in Phase 0 of the Converge project (see
+// ansible/roles/README.md for the schema). Write exists only for Phase 6's
+// authoring flows (internal/rolemerge); everything through Phase 5 only
+// ever read these files.
 package manifest
 
 import (
@@ -87,4 +89,18 @@ func LoadAll(repoRoot string) ([]Layer, error) {
 
 	sort.Slice(layers, func(i, j int) bool { return layers[i].ID < layers[j].ID })
 	return layers, nil
+}
+
+// Write marshals a Layer back to a meta/layer.yml at path, with the same
+// header comment every hand-written one in this repo carries.
+func Write(path string, l Layer) error {
+	data, err := yaml.Marshal(l)
+	if err != nil {
+		return fmt.Errorf("manifest: marshal: %w", err)
+	}
+	header := "# Machine-readable manifest for the Converge UI (see ansible/roles/README.md).\n"
+	if err := os.WriteFile(path, append([]byte(header), data...), 0o644); err != nil {
+		return fmt.Errorf("manifest: write %s: %w", path, err)
+	}
+	return nil
 }
