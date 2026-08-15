@@ -49,7 +49,13 @@ func Run(repoRoot string) (Result, error) {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "podman", "run", "--rm",
-		"-v", repoRoot+":/repo:ro",
+		// `:z` relabels the mount for SELinux (enforcing by default on
+		// Fedora): without it the mount looks empty to the container
+		// ("Permission denied" on the directory itself, not the files in
+		// it) — found running this against a real merge branch. `z`
+		// (shared label), not `Z` (private): this is read-only and never
+		// exclusive to one container.
+		"-v", repoRoot+":/repo:ro,z",
 		image, "bash", "-c", script)
 	out, err := cmd.CombinedOutput()
 
