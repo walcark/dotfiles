@@ -27,33 +27,76 @@
   </div>
 {{end}}
 
-<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
-  {{range .Cards}}
-    <div class="card elev-sm" style="padding:15px;gap:9px">
-      <div style="display:flex;align-items:flex-start;gap:11px">
-        <i class="ph ph-{{.Icon}}" style="font-size:20px;color:var(--color-accent)"></i>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <div style="font-family:var(--font-heading);font-size:16px">{{.Name}}</div>
-            {{if .Active}}<span class="tag tag-accent">on</span>{{else}}<span class="tag tag-neutral">off</span>{{end}}
-          </div>
-          <div style="font-size:12px;color:rgba(233,233,237,.5);margin-top:3px">{{.Description}}</div>
+<div style="display:grid;grid-template-columns:1fr 430px;gap:18px;align-items:start">
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+    {{range .Cards}}
+      <div class="card elev-sm" style="padding:15px;gap:9px{{if eq .ID $.Selected}};box-shadow:0 0 0 1px #9184d9, 0 0 22px rgba(145,132,217,.18){{end}}">
+        <div style="display:flex;align-items:flex-start;gap:11px">
+          <a href="/layers?selected={{.ID}}" style="display:flex;align-items:flex-start;gap:11px;flex:1;min-width:0;text-decoration:none;color:inherit">
+            <i class="ph ph-{{.Icon}}" style="font-size:20px;color:var(--color-accent)"></i>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <div style="font-family:var(--font-heading);font-size:16px">{{.Name}}</div>
+                {{if .Active}}<span class="tag tag-accent">on</span>{{else}}<span class="tag tag-neutral">off</span>{{end}}
+              </div>
+              <div style="font-size:12px;color:rgba(233,233,237,.5);margin-top:3px">{{.Description}}</div>
+            </div>
+          </a>
+          {{if .Toggleable}}
+          <form method="post" action="/layers/toggle">
+            <input type="hidden" name="id" value="{{.ID}}">
+            <input type="hidden" name="enable" value="{{if .Active}}false{{else}}true{{end}}">
+            <button type="submit" class="btn btn-secondary" style="font-size:12px">{{if .Active}}Disable{{else}}Enable{{end}}</button>
+          </form>
+          {{end}}
         </div>
-        {{if .Toggleable}}
-        <form method="post" action="/layers/toggle">
-          <input type="hidden" name="id" value="{{.ID}}">
-          <input type="hidden" name="enable" value="{{if .Active}}false{{else}}true{{end}}">
-          <button type="submit" class="btn btn-secondary" style="font-size:12px">{{if .Active}}Disable{{else}}Enable{{end}}</button>
-        </form>
-        {{end}}
+        <div style="display:flex;align-items:center;gap:14px;font-size:11.5px;color:rgba(233,233,237,.45)">
+          <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-package"></i>{{.PackageCount}} packages</span>
+          <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-list-checks"></i>{{.TaskCount}} tasks</span>
+          <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-arrow-counter-clockwise"></i>{{.Reversible}} of {{.TasksTotal}} reversible</span>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:14px;font-size:11.5px;color:rgba(233,233,237,.45)">
-        <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-package"></i>{{.PackageCount}} packages</span>
-        <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-list-checks"></i>{{.TaskCount}} tasks</span>
-        <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-arrow-counter-clockwise"></i>{{.Reversible}} of {{.TasksTotal}} reversible</span>
+    {{end}}
+  </div>
+
+  <aside style="position:sticky;top:0;border-radius:10px;background:var(--color-surface);box-shadow:var(--shadow-md);padding:17px;display:flex;flex-direction:column;gap:13px">
+    {{if .Detail}}
+      <div style="display:flex;align-items:center;gap:10px">
+        <i class="ph ph-{{.Detail.Icon}}" style="font-size:22px;color:var(--color-accent)"></i>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:var(--font-heading);font-size:19px">{{.Detail.Name}}</div>
+          <div style="font:11.5px ui-monospace,Menlo,monospace;color:rgba(233,233,237,.45)">{{.Detail.RolePath}}</div>
+        </div>
+        {{if .Detail.Active}}<span class="tag tag-accent">on</span>{{else}}<span class="tag tag-neutral">off</span>{{end}}
       </div>
-    </div>
-  {{end}}
+      <p style="margin:0;font-size:13px;color:rgba(233,233,237,.7);line-height:1.5">{{.Detail.Description}}</p>
+
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+          <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent)">Tasks</div>
+          <div style="flex:1;min-width:0;font-size:11px;color:rgba(233,233,237,.5)">{{.Detail.ReversibleLine}}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;max-height:340px;overflow:auto">
+          {{range .Detail.Tasks}}
+            <div style="display:flex;align-items:flex-start;gap:9px;padding:8px;border-radius:7px;background:rgba(233,233,237,.03)">
+              <i class="ph ph-{{.ReversibleIcon}}" style="font-size:13px;color:{{.ReversibleColor}};flex:none;margin-top:2px" title="reversible: {{.ReversibleLabel}}"></i>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:12.5px;color:rgba(233,233,237,.85)"><span style="font-family:ui-monospace,Menlo,monospace">{{.ID}}</span> <span class="tag tag-neutral" style="font-size:9.5px">{{.Kind}}</span></div>
+                <div style="font-size:11.5px;color:rgba(233,233,237,.5);margin-top:2px">{{.Description}}</div>
+                {{if .Provides}}
+                  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">
+                    {{range .Provides}}<span class="tag tag-outline" style="font:10.5px ui-monospace,Menlo,monospace">{{.}}</span>{{end}}
+                  </div>
+                {{end}}
+              </div>
+            </div>
+          {{end}}
+        </div>
+      </div>
+    {{else}}
+      <div class="placeholder"><p>Select a layer on the left.</p></div>
+    {{end}}
+  </aside>
 </div>
 
 <p style="margin-top:16px;font-size:12px;color:rgba(233,233,237,.45)">

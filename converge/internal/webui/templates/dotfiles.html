@@ -16,22 +16,63 @@
 </div>
 
 {{if eq .Tab "tree"}}
-  <div class="tree">
-    {{range .Rows}}
-      {{if .IsDir}}
-        <div class="tree-row" style="padding-left:{{.IndentPx}}px">
-          <i class="ph ph-folder kind" style="color:rgba(233,233,237,.5)"></i>
-          <span class="name">{{.Name}}</span>
-          <span class="dot dot-{{.Status}}" title="{{.Status}}"></span>
+  <div style="display:grid;grid-template-columns:330px 1fr;gap:16px;align-items:start">
+    <div class="tree">
+      {{range .Rows}}
+        {{if .IsDir}}
+          <div class="tree-row" style="padding-left:{{.IndentPx}}px">
+            <i class="ph ph-folder kind" style="color:rgba(233,233,237,.5)"></i>
+            <span class="name">{{.Name}}</span>
+            <span class="dot dot-{{.Status}}" title="{{.Status}}"></span>
+          </div>
+        {{else}}
+          <a class="tree-row" href="/dotfiles?tab=tree&path={{.Path}}" style="padding-left:{{.IndentPx}}px{{if eq .Path $.Selected}};background:rgba(145,132,217,.12){{end}}">
+            <i class="ph ph-file kind" style="color:rgba(233,233,237,.7)"></i>
+            <span class="name">{{.Name}}</span>
+            <span class="dot dot-{{.Status}}" title="{{.Status}}"></span>
+          </a>
+        {{end}}
+      {{end}}
+    </div>
+
+    <div style="border-radius:10px;background:var(--color-surface);box-shadow:var(--shadow-md);overflow:hidden;display:flex;flex-direction:column;max-height:70vh">
+      {{if .File}}
+        <div style="display:flex;align-items:center;gap:11px;padding:12px 15px;box-shadow:inset 0 -1px 0 rgba(233,233,237,.08)">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="font-family:var(--font-heading);font-size:16px">{{.File.TargetPath}}</div>
+              {{if .File.IsTemplate}}<span class="tag tag-accent">template</span>{{end}}
+            </div>
+            <div style="font:11.5px ui-monospace,Menlo,monospace;color:rgba(233,233,237,.45);margin-top:3px">{{.File.SourcePath}}</div>
+          </div>
+          {{if .PreviewError}}<span class="tag tag-outline" style="color:#e0a9a9;border-color:#e0a9a9">preview failed</span>{{end}}
+          {{if .File.IsTemplate}}<a href="/dotfiles?tab=tree&path={{.Selected}}&preview=1" class="btn btn-secondary">Preview</a>{{end}}
+          {{if .Editing}}
+            <a href="/dotfiles?tab=tree&path={{.Selected}}" class="btn btn-secondary">Cancel</a>
+          {{else}}
+            <a href="/dotfiles?tab=tree&path={{.Selected}}&edit=1" class="btn btn-secondary" style="gap:6px"><i class="ph ph-pencil-simple"></i>Edit file</a>
+          {{end}}
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;background:#12141f">
+          {{if .Editing}}
+            <form method="post" action="/dotfiles/edit/save">
+              <input type="hidden" name="path" value="{{.File.TargetPath}}">
+              <textarea name="content" class="input" spellcheck="false" style="width:100%;min-height:480px;border:0;border-radius:0;background:#12141f;font:12.5px/1.7 ui-monospace,Menlo,monospace;padding:12px 16px;resize:vertical">{{.File.Content}}</textarea>
+              <div style="padding:10px 16px"><button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i>&nbsp;Save &amp; apply</button></div>
+            </form>
+          {{else if .Rendered}}
+            <div style="padding:12px 16px;font:12.5px/1.7 ui-monospace,Menlo,monospace;white-space:pre-wrap;color:rgba(233,233,237,.85)">{{.Rendered}}</div>
+          {{else}}
+            <div style="padding:12px 16px;font:12.5px/1.7 ui-monospace,Menlo,monospace;white-space:pre-wrap;color:rgba(233,233,237,.85)">{{.File.Content}}</div>
+          {{end}}
         </div>
       {{else}}
-        <a class="tree-row" href="/dotfiles/edit?path={{.Path}}" style="padding-left:{{.IndentPx}}px">
-          <i class="ph ph-file kind" style="color:rgba(233,233,237,.7)"></i>
-          <span class="name">{{.Name}}</span>
-          <span class="dot dot-{{.Status}}" title="{{.Status}}"></span>
-        </a>
+        <div class="placeholder" style="padding:60px">
+          <i class="ph ph-file-text" style="font-size:28px;color:var(--color-accent)"></i>
+          <p style="margin-top:10px">Click a file on the left to view it here.</p>
+        </div>
       {{end}}
-    {{end}}
+    </div>
   </div>
 {{else if eq .Tab "bin"}}
   <h4 class="subhead">Scripts<span class="subhead-hint">~/bin · self-documented via the # Description line</span></h4>

@@ -74,7 +74,7 @@ func iconFor(layerID string) string {
 // last one parsed wins for every page), so pages are kept in separate sets.
 func New(r *repo.Repo, pixiHome string) (*App, error) {
 	pages := map[string]*template.Template{}
-	for _, page := range []string{"overview", "dotfiles", "run", "layers", "dfedit", "sourceedits"} {
+	for _, page := range []string{"overview", "dotfiles", "run", "layers", "sourceedits"} {
 		tmpl, err := template.ParseFS(templateFS, "templates/layout.html", "templates/"+page+".html")
 		if err != nil {
 			return nil, fmt.Errorf("webui: parse templates for %s: %w", page, err)
@@ -99,7 +99,6 @@ func (a *App) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("/layers", a.handleLayers)
 	mux.HandleFunc("/layers/toggle", a.handleLayerToggle)
 	mux.HandleFunc("/dotfiles/env/save", a.handleEnvSave)
-	mux.HandleFunc("/dotfiles/edit", a.handleDotfilesEdit)
 	mux.HandleFunc("/dotfiles/edit/save", a.handleDotfilesEditSave)
 	mux.HandleFunc("/source-edits", a.handleSourceEdits)
 	mux.HandleFunc("/source-edits/merge", a.handleMergeRoles)
@@ -405,6 +404,29 @@ func (a *App) handleDotfiles(w http.ResponseWriter, req *http.Request) {
 		data["Rows"] = vmRows
 		data["Counts"] = dfview.Counts(rows)
 
+		// The design's detail pane sits right next to the tree, updating
+		// in place as you click a file — not a separate screen. ?path
+		// selects the row; ?edit=1 swaps the read-only view for the save
+		// form, matching the mockup's "Edit file" toggle.
+		selected := req.URL.Query().Get("path")
+		data["Selected"] = selected
+		if selected != "" {
+			file, err := dfedit.Read(a.Repo, selected)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			data["File"] = file
+			data["Editing"] = req.URL.Query().Get("edit") == "1"
+			if file.IsTemplate && req.URL.Query().Get("preview") == "1" {
+				if rendered, err := dfedit.Preview(a.Repo, file.Content); err == nil {
+					data["Rendered"] = rendered
+				} else {
+					data["PreviewError"] = err.Error()
+				}
+			}
+		}
+
 	case "bin":
 		binDir := filepath.Join(os.Getenv("HOME"), "bin")
 		entries, err := binscan.Scan(binDir)
@@ -551,33 +573,11 @@ func (a *App) handleEnvSave(w http.ResponseWriter, req *http.Request) {
 }
 
 // — Dotfiles source editor —
-
-func (a *App) handleDotfilesEdit(w http.ResponseWriter, req *http.Request) {
-	target := req.URL.Query().Get("path")
-	if target == "" {
-		http.Error(w, "webui: missing path", http.StatusBadRequest)
-		return
-	}
-	file, err := dfedit.Read(a.Repo, target)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	data := map[string]any{
-		"Title": file.TargetPath, "Kicker": "Dotfiles · edit",
-		"Nav": navFor("Dotfiles"), "Machine": a.machine(),
-		"File": file,
-	}
-	if req.URL.Query().Get("preview") == "1" && file.IsTemplate {
-		if rendered, err := dfedit.Preview(a.Repo, file.Content); err == nil {
-			data["Rendered"] = rendered
-		} else {
-			data["PreviewError"] = err.Error()
-		}
-	}
-	a.render(w, "dfedit", data)
-}
+//
+// No separate route: the editor lives inline in handleDotfiles's "tree"
+// case, in the pane right next to the tree — see its ?path/?edit
+// handling above. Only the save action needs its own endpoint (it's a
+// distinct form target), redirecting back into that same split view.
 
 func (a *App) handleDotfilesEditSave(w http.ResponseWriter, req *http.Request) {
 	target := req.FormValue("path")
@@ -586,7 +586,7 @@ func (a *App) handleDotfilesEditSave(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, req, "/dotfiles/edit?path="+url.QueryEscape(target)+"&saved=1", http.StatusSeeOther)
+	http.Redirect(w, req, "/dotfiles?tab=tree&path="+url.QueryEscape(target)+"&saved=1", http.StatusSeeOther)
 }
 
 // — Run log —
@@ -738,11 +738,73 @@ func (a *App) handleLayers(w http.ResponseWriter, req *http.Request) {
 		sort.Slice(orphans, func(i, j int) bool { return orphans[i].Package < orphans[j].Package })
 	}
 
+	// The design's detail pane sits to the right of the cards, updating in
+	// place as you click one — not a separate screen. Defaults to the
+	// first card so the pane is never empty on first load.
+	selected := req.URL.Query().Get("selected")
+	if selected == "" && len(layers) > 0 {
+		selected = layers[0].ID
+	}
+	var detail *layerDetailVM
+	for _, l := range layers {
+		if l.ID != selected {
+			continue
+		}
+		d := layerDetailVM{
+			ID: l.ID, Name: l.Name, RolePath: l.RolePath, Description: l.Description,
+			Icon: iconFor(l.ID), Active: l.ID == "core" || active[l.ID], Toggleable: l.ID != "core",
+		}
+		for _, t := range l.Tasks {
+			d.Tasks = append(d.Tasks, taskVM{
+				ID: t.ID, Kind: t.Kind, Description: t.Description, Provides: t.Provides,
+				ReversibleIcon: reversibleIcon(t.Reversible), ReversibleColor: reversibleColor(t.Reversible),
+				ReversibleLabel: t.Reversible,
+			})
+		}
+		rev, total := l.ReversibleCount()
+		d.ReversibleLine = fmt.Sprintf("%d of %d tasks reversible", rev, total)
+		detail = &d
+		break
+	}
+
 	a.render(w, "layers", map[string]any{
 		"Title": "Layers", "Kicker": "ansible/roles",
 		"Nav": navFor("Layers"), "Machine": a.machine(),
 		"Cards": cards, "FromMachine": fromMachine, "Orphans": orphans,
+		"Selected": selected, "Detail": detail,
 	})
+}
+
+type taskVM struct {
+	ID, Kind, Description                            string
+	Provides                                         []string
+	ReversibleIcon, ReversibleColor, ReversibleLabel string
+}
+
+type layerDetailVM struct {
+	ID, Name, RolePath, Description, Icon string
+	Active, Toggleable                    bool
+	Tasks                                 []taskVM
+	ReversibleLine                        string
+}
+
+// reversibleIcon/-Color map a task's reversible value to the mockup's own
+// undo indicator: grey ↩ = derived, accent ↩ = explicit, red ⚠ = none.
+func reversibleIcon(r string) string {
+	if r == "none" {
+		return "warning"
+	}
+	return "arrow-counter-clockwise"
+}
+func reversibleColor(r string) string {
+	switch r {
+	case "explicit":
+		return "#9184d9"
+	case "none":
+		return "#e0a9a9"
+	default:
+		return "rgba(233,233,237,.4)"
+	}
 }
 
 // orphanVM is a package the ledger says was installed by a layer that's no
