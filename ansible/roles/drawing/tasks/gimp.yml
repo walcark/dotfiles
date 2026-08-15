@@ -1,0 +1,5 @@
+- name: Install latest version of GIMP
+  community.general.flatpak:
+    name: org.gimp.GIMP
+    state: latest
+    method: user

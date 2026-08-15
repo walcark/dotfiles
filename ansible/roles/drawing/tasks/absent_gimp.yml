@@ -1,0 +1,5 @@
+- name: Uninstall GIMP
+  community.general.flatpak:
+    name: org.gimp.GIMP
+    state: absent
+    method: user
