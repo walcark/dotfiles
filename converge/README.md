@@ -213,6 +213,12 @@ rather than by reading the script.
 - `ansible-galaxy collection install -q ...` — `-q` isn't a global flag,
   it's per-subcommand; the command just refused to run.
 
+Add-a-task worked end to end on the first real attempt (#4, adding a
+`gimp` flatpak task to `drawing` — also closed without merging): the
+shared pipeline and the prior three fixes carried straight over with no
+new sandbox surprises, which is really the point of factoring it out
+instead of writing this flow's own copy.
+
 **Known limitation, not fixed**: a merged `meta/layer.yml` comes out
 reformatted by `yaml.v3`'s default marshaling — 4-space indent, inline
 arrays (`profiles: [client]`) exploded into block lists — rather than
