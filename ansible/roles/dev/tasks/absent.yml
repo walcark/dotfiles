@@ -1,8 +1,12 @@
 # Inverse of dev/tasks/main.yml, one import per task unit, reverse order —
-# see meta/layer.yml for the full task list.
+# see meta/layer.yml for the full task list. `absent_skip` — see
+# core/tasks/absent.yml's header comment.
 - import_tasks: absent_golang.yml
+  when: "'golang' not in (absent_skip | default([]))"
 - import_tasks: absent_tiger_vnc.yml
+  when: "'tiger_vnc' not in (absent_skip | default([]))"
 - import_tasks: absent_nvim.yml
+  when: "'nvim' not in (absent_skip | default([]))"
 
 - name: Uninstall dev pixi global tools
   ansible.builtin.include_role:
@@ -10,3 +14,4 @@
     tasks_from: absent_pixi
   vars:
     pixi_tools: "{{ dev_pixi_tools }}"
+  when: "'pixi' not in (absent_skip | default([]))"

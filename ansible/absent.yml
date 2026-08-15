@@ -1,0 +1,61 @@
+# Declarative uninstall entry point — the inverse of playbook.yml. Never
+# run automatically or on a schedule: Converge invokes this explicitly when
+# a layer is disabled, after reference counting which packages are still
+# needed by another still-active layer (see internal/refcount and
+# ansible/roles/README.md's `tasks/absent_<id>.yml` convention).
+#
+# Vars:
+#   absent_layers: list of role ids to uninstall, e.g. ["gaming"] — never
+#                  "core", which has no on/off flag and is never disabled.
+#   absent_skip:   list of task ids to leave installed — the
+#                  reference-counting keeps. Shared across every role in
+#                  absent_layers; safe only because task ids collide across
+#                  roles solely via core/tasks/pixi.yml's shared "pixi" id,
+#                  and core is never in absent_layers.
+#
+# desktop is deliberately absent below: it has no tasks/absent.yml because
+# it has no tasks/main.yml either (see desktop/tasks/main.yml's own
+# comment) — nothing to uninstall.
+- hosts: localhost
+  become: false
+  tasks:
+    - name: Load chezmoi-rendered ansible vars
+      ansible.builtin.include_vars: "{{ ansible_facts['user_dir'] }}/.config/dotfiles/ansible.yml"
+
+    # Normally set by core/tasks/flatpak.yml as part of the main playbook
+    # run; this playbook never runs that, so absent tasks gated on
+    # `flatpak_available` (e.g. dev/tasks/absent_tiger_vnc.yml) need it
+    # set here instead, or they'd silently skip.
+    - name: Detect whether flatpak is available
+      ansible.builtin.command: flatpak --version
+      register: r_flatpak_check
+      changed_when: false
+      failed_when: false
+
+    - name: Record flatpak availability
+      ansible.builtin.set_fact:
+        flatpak_available: "{{ r_flatpak_check.rc == 0 }}"
+
+    - name: Uninstall gnome
+      ansible.builtin.include_role:
+        name: gnome
+        tasks_from: absent
+      when: "'gnome' in (absent_layers | default([]))"
+
+    - name: Uninstall gaming
+      ansible.builtin.include_role:
+        name: gaming
+        tasks_from: absent
+      when: "'gaming' in (absent_layers | default([]))"
+
+    - name: Uninstall dev
+      ansible.builtin.include_role:
+        name: dev
+        tasks_from: absent
+      when: "'dev' in (absent_layers | default([]))"
+
+    - name: Uninstall drawing
+      ansible.builtin.include_role:
+        name: drawing
+        tasks_from: absent
+      when: "'drawing' in (absent_layers | default([]))"

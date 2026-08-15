@@ -1,4 +1,8 @@
 # Inverse of gaming/tasks/main.yml, one import per task unit, reverse order.
+# `absent_skip` — see core/tasks/absent.yml's header comment.
 - import_tasks: absent_discord.yml
+  when: "'discord' not in (absent_skip | default([]))"
 - import_tasks: absent_lutris.yml
+  when: "'lutris' not in (absent_skip | default([]))"
 - import_tasks: absent_steam.yml
+  when: "'steam' not in (absent_skip | default([]))"

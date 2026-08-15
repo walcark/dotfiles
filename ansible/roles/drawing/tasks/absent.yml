@@ -1,2 +1,4 @@
-# Inverse of drawing/tasks/main.yml.
+# Inverse of drawing/tasks/main.yml. `absent_skip` — see
+# core/tasks/absent.yml's header comment.
 - import_tasks: absent_krita.yml
+  when: "'krita' not in (absent_skip | default([]))"

@@ -1,13 +1,16 @@
 # Inverse of gnome/tasks/main.yml, reverse order — see meta/layer.yml for
-# the full task list. The shell-version/extension-info lookup is repeated
-# from main.yml: it's needed again here to recover each extension's uuid,
-# not a persistent install of its own.
+# the full task list. `absent_skip` — see core/tasks/absent.yml's header
+# comment. The shell-version/extension-info lookup is repeated from
+# main.yml: it's needed again here to recover each extension's uuid, not a
+# persistent install of its own — run unconditionally, it's cheap, and
+# guarding it too would just duplicate the skip check below for no benefit.
 - name: Get Gnome shell version.
   ansible.builtin.shell: |
     set -o pipefail
     gnome-shell --version | sed 's/[^0-9.]*\([0-9.]*\).*/\1/'
   register: gnome_shell_version
   changed_when: false
+  when: "'install_extension' not in (absent_skip | default([]))"
 
 - name: Get Gnome Shell extension info
   ansible.builtin.uri:
@@ -15,11 +18,14 @@
     return_content: yes
   loop: "{{ gnome_extension_ids }}"
   register: r_gnome_extension_info
+  when: "'install_extension' not in (absent_skip | default([]))"
 
 - name: Uninstall extensions
   include_tasks: absent_install_extension.yml
   vars:
     gnome_extension_info: "{{ item.json }}"
   loop: "{{ r_gnome_extension_info.results }}"
+  when: "'install_extension' not in (absent_skip | default([])) and r_gnome_extension_info.results is defined"
 
 - import_tasks: absent_thunderbird.yml
+  when: "'thunderbird' not in (absent_skip | default([]))"

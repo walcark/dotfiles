@@ -77,8 +77,9 @@ type Event struct {
 type Stage string
 
 const (
-	StageCheck Stage = "check"
-	StageApply Stage = "apply"
+	StageCheck  Stage = "check"
+	StageApply  Stage = "apply"
+	StageAbsent Stage = "absent" // uninstalling layers dropped since the last apply — see ComputeAbsentPlan
 )
 
 // State is a Run's overall outcome.
@@ -145,6 +146,16 @@ type Manager struct {
 	// StateOK — see internal/webui wiring this to the ledger.
 	OnApplySuccess func()
 
+	// ComputeAbsentPlan, if set, runs right after a successful apply
+	// stage, before the run is marked finished: it compares the ledger
+	// (what's actually installed, as of the last successful apply)
+	// against the layers active now and returns which layers need
+	// uninstalling and which of their tasks to skip because another
+	// still-active layer also needs that package — see internal/refcount.
+	// A nil or empty `layers` return means there's nothing to do, and the
+	// absent stage is skipped entirely.
+	ComputeAbsentPlan func() (layers, skip []string)
+
 	mu  sync.Mutex
 	run *Run
 	seq int
@@ -189,7 +200,9 @@ func (m *Manager) start(mode string) (*Run, error) {
 }
 
 func (m *Manager) execute(run *Run, mode string) {
-	if err := m.runPlaybook(run, StageCheck, []string{"--check", "--diff"}); err != nil {
+	mainPlaybook := "ansible/playbook.yml"
+
+	if err := m.runPlaybook(run, StageCheck, mainPlaybook, nil, []string{"--check", "--diff"}); err != nil {
 		m.finish(run, StateFailed, err.Error())
 		return
 	}
@@ -200,16 +213,46 @@ func (m *Manager) execute(run *Run, mode string) {
 		m.finish(run, StateOK, "")
 		return
 	}
-	if err := m.runPlaybook(run, StageApply, nil); err != nil {
+	if err := m.runPlaybook(run, StageApply, mainPlaybook, nil, nil); err != nil {
 		m.finish(run, StateFailed, err.Error())
 		return
 	}
-	if run.Snapshot().State != StateFailed {
-		m.finish(run, StateOK, "")
-		if m.OnApplySuccess != nil {
-			m.OnApplySuccess()
+	if run.Snapshot().State == StateFailed {
+		return
+	}
+
+	if m.ComputeAbsentPlan != nil {
+		layers, skip := m.ComputeAbsentPlan()
+		if len(layers) > 0 {
+			vars := map[string]string{"absent_layers": jsonList(layers)}
+			if len(skip) > 0 {
+				vars["absent_skip"] = jsonList(skip)
+			}
+			if err := m.runPlaybook(run, StageAbsent, "ansible/absent.yml", vars, nil); err != nil {
+				m.finish(run, StateFailed, err.Error())
+				return
+			}
+			if run.Snapshot().State == StateFailed {
+				return
+			}
 		}
 	}
+
+	m.finish(run, StateOK, "")
+	if m.OnApplySuccess != nil {
+		m.OnApplySuccess()
+	}
+}
+
+// jsonList renders a Go string slice as a JSON array literal, suitable for
+// `-e 'var=[...]'` — ansible parses -e values that look like JSON as
+// structured data rather than a literal string.
+func jsonList(items []string) string {
+	b, err := json.Marshal(items)
+	if err != nil {
+		return "[]"
+	}
+	return string(b)
 }
 
 func (m *Manager) finish(run *Run, state State, errMsg string) {
@@ -220,7 +263,7 @@ func (m *Manager) finish(run *Run, state State, errMsg string) {
 	run.mu.Unlock()
 }
 
-func (m *Manager) runPlaybook(run *Run, stage Stage, extraArgs []string) error {
+func (m *Manager) runPlaybook(run *Run, stage Stage, playbook string, extraVars map[string]string, extraArgs []string) error {
 	run.mu.Lock()
 	run.stage = stage
 	run.mu.Unlock()
@@ -234,8 +277,11 @@ func (m *Manager) runPlaybook(run *Run, stage Stage, extraArgs []string) error {
 		"-i", filepath.Join(m.Repo.RootDir, "ansible", "inventory.ini"),
 		"-e", "dotfiles_url=https://github.com/walcark/dotfiles.git",
 	}
+	for k, v := range extraVars {
+		args = append(args, "-e", k+"="+v)
+	}
 	args = append(args, extraArgs...)
-	args = append(args, "ansible/playbook.yml")
+	args = append(args, playbook)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()

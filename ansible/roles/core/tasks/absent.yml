@@ -6,11 +6,18 @@
 #     managed files down with it
 #   - zk.yml — private notes repo; ansible must never delete user-authored
 #     content
+#
+# `absent_skip` (default empty) is Converge's reference-counting output: a
+# list of task ids to leave installed because another still-active layer
+# also declares that package — see ansible/absent.yml, the entry point
+# this is normally reached from.
 - name: Load chezmoi-rendered ansible vars
   ansible.builtin.include_vars: "{{ ansible_facts['user_dir'] }}/.config/dotfiles/ansible.yml"
 
 - import_tasks: absent_pixi.yml
   vars:
     pixi_tools: "{{ core_pixi_tools }}"
+  when: "'pixi' not in (absent_skip | default([]))"
 
 - import_tasks: absent_flatpak.yml
+  when: "'flatpak' not in (absent_skip | default([]))"

@@ -4,7 +4,7 @@ A single Go binary that serves the Converge UI on `127.0.0.1:<random port>`
 and opens the default browser — see the design handoff (`ansible/roles/README.md`
 and the Phase 0 commit) for the project's overall shape.
 
-## Status: Phase 3 (+ Overview, Dotfiles, Runs)
+## Status: Phase 4 (+ Overview, Dotfiles, Runs, Layers)
 
 Overview, Dotfiles, Run log and Layers are wired up. Source edits and
 Machines are still disabled placeholders, tagged with the phase that
@@ -35,9 +35,44 @@ re-rendered by `apply` (only `init` re-renders it), so a direct edit
 followed by a targeted apply works without touching that cache at all.
 
 **Ledger** (`internal/ledger`, `~/.local/state/converge/ledger.json`,
-not versioned): after every successful Apply, snapshots every package
-every currently-active layer's tasks declare. Sets up Phase 4's orphan
-detection (diff old vs. new snapshot) without implementing it yet.
+not versioned): after every successful run, snapshots every package every
+currently-active layer's tasks declare.
+
+## Phase 4 — declarative uninstall, reference counting, orphans
+
+`ansible/absent.yml` is the new entry point: `-e absent_layers=[...]`
+picks which roles' `tasks/absent.yml` to run, `-e absent_skip=[...]`
+(every role's `absent.yml` now takes this var) leaves specific tasks
+installed. Every role's `tasks/absent.yml` import now carries a
+`when: "'<id>' not in (absent_skip | default([]))"` guard.
+
+Apply now has a third possible stage after check and apply:
+`internal/refcount` diffs the ledger (what's really installed, as of the
+last successful run) against the layers active now. Any package whose
+ledger layer went inactive is a removal candidate — unless another
+currently-active layer's task also provides it, in which case its task id
+goes into `absent_skip` and it's left alone. If there's anything left to
+remove, the run's third stage invokes `ansible/absent.yml` with the
+computed plan, in the same run log, before the ledger updates.
+
+**Orphans** show up right on the Layers screen (not a separate route):
+same `refcount.Compute`, called again at render time against the
+*current* ledger — so a package stays listed as an orphan for exactly as
+long as it takes the next Apply to clear it (or forever, if its task is
+`reversible: none`, shown as "stays forever" rather than implying an
+Apply will ever fix it).
+
+Found and fixed via real end-to-end VM testing (disable Gaming, Apply,
+confirm only Steam/Lutris/Discord are gone — Phase 4's own "done when"):
+`ansible/roles/{dev,drawing,gaming,gnome}/meta/main.yml` each declared
+`dependencies: [core]` — ansible's own role-dependency mechanism, not the
+Phase 0 `meta/layer.yml` schema, and already redundant with
+`ansible/playbook.yml` explicitly listing `core` first. Invoking a role
+via `include_role` (as `ansible/absent.yml` does) honors that dependency
+regardless of `tasks_from`, so uninstalling Gaming was **also** silently
+re-running core's full *install* (chezmoi init, pixi installs, the
+FlatHub remote, the zk clone) as a side effect. Deleted all four files —
+harmless for the normal install flow, actively wrong for this one.
 
 **⚠️ `CONVERGE_DEV_SOURCE` only sandboxes reads, not runs.** It repoints
 the read-only chezmoi queries (status/managed/ignored/data) at a plain
@@ -112,4 +147,5 @@ where this repo has actually been applied via chezmoi (i.e. everywhere
 | `internal/activelayers` | resolves the real on/off state of every layer (per-machine file, falling back to group_vars) |
 | `internal/machinevars` | how a layer's on/off state actually changes — edits `chezmoi.toml`, re-applies the dependent files |
 | `internal/ledger` | reads/writes `~/.local/state/converge/ledger.json` |
+| `internal/refcount` | diffs the ledger against active layers — what to actually remove, what to keep because another active layer still needs it |
 | `internal/webui` | HTTP handlers, templates, the Nocturne-based static assets |

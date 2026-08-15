@@ -22,6 +22,7 @@ import (
 	"github.com/walcark/dotfiles/converge/internal/machinevars"
 	"github.com/walcark/dotfiles/converge/internal/manifest"
 	"github.com/walcark/dotfiles/converge/internal/pixiglobal"
+	"github.com/walcark/dotfiles/converge/internal/refcount"
 	"github.com/walcark/dotfiles/converge/internal/repo"
 	"github.com/walcark/dotfiles/converge/internal/runner"
 )
@@ -76,6 +77,7 @@ func New(r *repo.Repo, pixiHome string) (*App, error) {
 	}
 	app := &App{Repo: r, Runner: runner.NewManager(r), pages: pages, pixiHome: pixiHome}
 	app.Runner.OnApplySuccess = app.updateLedger
+	app.Runner.ComputeAbsentPlan = app.computeAbsentPlan
 	return app, nil
 }
 
@@ -106,6 +108,28 @@ func (a *App) updateLedger() {
 		return
 	}
 	_ = ledger.Snapshot(layers, active).Save(os.Getenv("HOME"))
+}
+
+// computeAbsentPlan runs after a successful apply stage, before the run
+// finishes — see runner.Manager.ComputeAbsentPlan. It reads the ledger
+// from *before* this run's apply stage, which is fine: updateLedger only
+// runs once the whole run (apply, then this absent stage if any) is done,
+// so the ledger still reflects the last successful run at this point.
+func (a *App) computeAbsentPlan() (layersOut, skipOut []string) {
+	layers, err := manifest.LoadAll(a.Repo.RootDir)
+	if err != nil {
+		return nil, nil
+	}
+	active, _, err := activelayers.Load(a.Repo.RootDir, os.Getenv("HOME"))
+	if err != nil {
+		return nil, nil
+	}
+	led, err := ledger.Load(os.Getenv("HOME"))
+	if err != nil {
+		return nil, nil
+	}
+	plan := refcount.Compute(layers, led, active)
+	return plan.Layers, plan.Skip
 }
 
 // — shared shell data —
@@ -543,11 +567,43 @@ func (a *App) handleLayers(w http.ResponseWriter, req *http.Request) {
 		})
 	}
 
+	var orphans []orphanVM
+	if led, err := ledger.Load(os.Getenv("HOME")); err == nil {
+		plan := refcount.Compute(layers, led, active)
+		for pkg, layerID := range plan.Remove {
+			task := led.Packages[pkg].Task
+			reversible := "unknown"
+			for _, l := range layers {
+				if l.ID != layerID {
+					continue
+				}
+				for _, t := range l.Tasks {
+					if t.ID == task {
+						reversible = t.Reversible
+					}
+				}
+			}
+			orphans = append(orphans, orphanVM{Package: pkg, Layer: layerID, Reversible: reversible})
+		}
+		sort.Slice(orphans, func(i, j int) bool { return orphans[i].Package < orphans[j].Package })
+	}
+
 	a.render(w, "layers", map[string]any{
 		"Title": "Layers", "Kicker": "ansible/roles",
 		"Nav": navFor("Layers"), "Machine": a.machine(),
-		"Cards": cards, "FromMachine": fromMachine,
+		"Cards": cards, "FromMachine": fromMachine, "Orphans": orphans,
 	})
+}
+
+// orphanVM is a package the ledger says was installed by a layer that's no
+// longer active, and reference counting confirms no other active layer
+// still needs it — so Apply should still remove it (`reversible` is
+// derived/explicit), or it's a `reversible: none` task that never will,
+// which is worth knowing about even though nothing here can fix it.
+type orphanVM struct {
+	Package    string
+	Layer      string
+	Reversible string
 }
 
 func (a *App) handleLayerToggle(w http.ResponseWriter, req *http.Request) {

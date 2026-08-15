@@ -6,6 +6,27 @@
   </div>
 {{end}}
 
+{{if .Orphans}}
+  <div class="card elev-sm" style="padding:15px;gap:10px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <i class="ph ph-warning-circle" style="font-size:16px;color:#e0a9a9"></i>
+      <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent)">Orphans</div>
+      <div style="flex:1;min-width:0;font-size:11.5px;color:rgba(233,233,237,.5)">installed by a layer that's now off, and no other active layer needs them</div>
+    </div>
+    {{range .Orphans}}
+      <div style="display:flex;align-items:center;gap:10px;font-size:12.5px">
+        <span style="font:12px ui-monospace,Menlo,monospace;flex:1;min-width:0">{{.Package}}</span>
+        <span class="tag tag-neutral" style="font-size:10px">was: {{.Layer}}</span>
+        {{if eq .Reversible "none"}}
+          <span class="tag tag-outline" style="font-size:10px;color:#e0a9a9;border-color:#e0a9a9">stays forever</span>
+        {{else}}
+          <span class="tag tag-outline" style="font-size:10px">Apply will remove it</span>
+        {{end}}
+      </div>
+    {{end}}
+  </div>
+{{end}}
+
 <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
   {{range .Cards}}
     <div class="card elev-sm" style="padding:15px;gap:9px">
