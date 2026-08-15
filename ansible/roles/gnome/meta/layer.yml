@@ -1,0 +1,16 @@
+# Machine-readable manifest for the Converge UI (see ansible/roles/README.md).
+name: Gnome
+description: Thunderbird and GNOME Shell extensions
+profiles: [client]
+requires: [core]
+tasks:
+  - id: thunderbird
+    kind: flatpak
+    description: Thunderbird ESR, kept at latest
+    provides: [org.mozilla.thunderbird_esr]
+    reversible: derived
+  - id: install_extension
+    kind: custom
+    description: GNOME Shell extensions, looked up by id against extensions.gnome.org
+    provides: ["gnome-extension:3193", "gnome-extension:1460"]
+    reversible: explicit # needs the same extension-info API lookup as install, to recover each uuid

@@ -1,0 +1,7 @@
+# Inverse of tasks/tiger_vnc.yml.
+- name: Uninstall TigerVNC flatpak
+  ansible.builtin.flatpak:
+    name: org.tigervnc.vncviewer
+    state: absent
+    method: user
+  when: flatpak_available | default(false)

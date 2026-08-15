@@ -1,0 +1,2 @@
+# Inverse of desktop/tasks/main.yml.
+- import_tasks: absent_kitty.yml

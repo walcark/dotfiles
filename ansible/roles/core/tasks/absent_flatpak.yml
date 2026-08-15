@@ -1,0 +1,13 @@
+# Inverse of tasks/flatpak.yml.
+- name: Detect whether flatpak is available
+  ansible.builtin.command: flatpak --version
+  register: r_flatpak_check
+  changed_when: false
+  failed_when: false
+
+- name: Remove FlatHub remote (user)
+  community.general.flatpak_remote:
+    name: flathub
+    method: user
+    state: absent
+  when: r_flatpak_check.rc == 0

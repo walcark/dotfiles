@@ -1,0 +1,16 @@
+# Inverse of core/tasks/main.yml, one import per reversible task unit — see
+# meta/layer.yml for the full task list and ansible/roles/README.md for the
+# naming convention. chezmoi.yml and zk.yml have no tasks/absent_*.yml
+# counterpart: both are marked `reversible: none` in the manifest.
+#   - chezmoi.yml — uninitializing chezmoi would take every other role's
+#     managed files down with it
+#   - zk.yml — private notes repo; ansible must never delete user-authored
+#     content
+- name: Load chezmoi-rendered ansible vars
+  ansible.builtin.include_vars: "{{ ansible_facts['user_dir'] }}/.config/dotfiles/ansible.yml"
+
+- import_tasks: absent_pixi.yml
+  vars:
+    pixi_tools: "{{ core_pixi_tools }}"
+
+- import_tasks: absent_flatpak.yml

@@ -1,0 +1,6 @@
+# Inverse of tasks/steam.yml.
+- name: Uninstall Steam
+  community.general.flatpak:
+    name: com.valvesoftware.Steam
+    state: absent
+    method: user

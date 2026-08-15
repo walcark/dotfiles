@@ -1,0 +1,42 @@
+# Inverse of nvim.yml. The nvim-configs clone itself is left in place: it's
+# the user's live Neovim config (may hold uncommitted edits), not something
+# ansible should delete on a whim — same reasoning as the zk clone in
+# core/tasks/zk.yml. Everything the clone caused to be installed elsewhere
+# (pixi/npm/static) is reversed, read from the same manifest install used.
+- name: Check whether the nvim tools manifest is still present
+  ansible.builtin.stat:
+    path: "{{ ansible_facts['user_dir'] }}/.config/nvim-configs/mini-nvim/tools.yml"
+  register: r_nvim_tools_manifest
+
+- name: Load nvim tools manifest
+  ansible.builtin.include_vars:
+    file: "{{ ansible_facts['user_dir'] }}/.config/nvim-configs/mini-nvim/tools.yml"
+    name: nvim_tools
+  when: r_nvim_tools_manifest.stat.exists
+
+- name: Remove static binaries
+  ansible.builtin.file:
+    path: "{{ ansible_facts['user_dir'] }}/.local/bin/{{ item.value.bin }}"
+    state: absent
+  loop: "{{ nvim_tools.static | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when: nvim_tools is defined
+
+- name: Uninstall npm-only language servers
+  ansible.builtin.command:
+    cmd: >-
+      {{ pixi_home }}/bin/npm uninstall -g
+      --prefix {{ ansible_facts['user_dir'] }}/.local {{ item.package }}
+    removes: "{{ ansible_facts['user_dir'] }}/.local/bin/{{ item.bin }}"
+  loop: "{{ nvim_tools.npm }}"
+  when: nvim_tools is defined
+  become: false
+
+- name: Uninstall nvim pixi language stack
+  ansible.builtin.include_role:
+    name: core
+    tasks_from: absent_pixi
+  vars:
+    pixi_tools: "{{ nvim_tools.pixi }}"
+  when: nvim_tools is defined

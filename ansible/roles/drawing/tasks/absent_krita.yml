@@ -1,0 +1,6 @@
+# Inverse of tasks/krita.yml.
+- name: Uninstall Krita
+  community.general.flatpak:
+    name: org.kde.krita
+    state: absent
+    method: user

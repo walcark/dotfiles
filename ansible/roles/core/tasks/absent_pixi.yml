@@ -1,0 +1,12 @@
+# Parametrized inverse of pixi.yml: expects a `pixi_tools` list, uninstalls
+# each with `pixi global uninstall`. Reused by other roles' absent.yml the
+# same way pixi.yml is reused by their tasks/main.yml — core stays the only
+# permitted cross-role dependency, install and uninstall symmetric.
+- name: Uninstall pixi global tools
+  ansible.builtin.command:
+    cmd: "pixi global uninstall {{ item.split('=') | first }}"
+    removes: "{{ pixi_home }}/envs/{{ item.split('=') | first }}"
+  environment:
+    PIXI_HOME: "{{ pixi_home }}"
+    PATH: "{{ pixi_home }}/bin:{{ ansible_env.PATH }}"
+  loop: "{{ pixi_tools }}"

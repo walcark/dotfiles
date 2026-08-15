@@ -1,0 +1,7 @@
+# Inverse of tasks/golang.yml. Nothing to do: golang.yml only runs a
+# self-cleaning smoke test (its own `always:` block removes the temporary
+# workspace) — no state persists for this task to reverse. This file exists
+# anyway so `reversible: derived` in meta/layer.yml has a real file behind
+# it, same as every other reversible task.
+- name: Nothing to reverse for golang (smoke test leaves no persistent state)
+  ansible.builtin.meta: noop

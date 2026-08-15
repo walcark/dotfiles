@@ -1,0 +1,6 @@
+# Inverse of tasks/lutris.yml.
+- name: Uninstall Lutris
+  community.general.flatpak:
+    name: net.lutris.Lutris
+    state: absent
+    method: user

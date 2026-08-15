@@ -1,0 +1,6 @@
+# Inverse of tasks/thunderbird.yml.
+- name: Uninstall ThunderBird
+  community.general.flatpak:
+    name: org.mozilla.thunderbird_esr
+    state: absent
+    method: user

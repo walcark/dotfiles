@@ -1,0 +1,28 @@
+# Machine-readable manifest for the Converge UI (see ansible/roles/README.md).
+# Not read by ansible itself — group_vars/all.yml and playbook.yml are
+# still the actual source of truth for what runs.
+name: Core
+description: Baseline tooling on every machine — pixi CLI tools, FlatHub remote, chezmoi bootstrap, zk clone
+profiles: [client, server]
+requires: []
+tasks:
+  - id: chezmoi
+    kind: command
+    description: chezmoi init/apply — bootstraps the dotfiles themselves
+    provides: []
+    reversible: none # would take every other role's managed files down with it
+  - id: pixi
+    kind: pixi
+    description: pixi global tools installed on every machine
+    provides: [starship, zoxide, bat, fzf, ripgrep, fd-find, git-delta, jq, tree, tldr, tmux, gh, restic]
+    reversible: derived
+  - id: flatpak
+    kind: command
+    description: FlatHub remote (user)
+    provides: [flathub-remote]
+    reversible: derived
+  - id: zk
+    kind: git
+    description: clone of the private zettelkasten notes repo
+    provides: []
+    reversible: none # private notes repo; ansible must never delete user-authored content

@@ -1,0 +1,17 @@
+# Inverse of tasks/install_extension.yml.
+- name: "Check if Gnome Shell extension is installed - {{ gnome_extension_info.name }}"
+  ansible.builtin.stat:
+    path: "{{ ansible_facts['user_dir'] }}/.local/share/gnome-shell/extensions/{{ gnome_extension_info.uuid }}/metadata.json"
+  register: r_gnome_extensions_check_existing
+
+- name: "Disable Gnome Shell extension - {{ gnome_extension_info.name }}"
+  ansible.builtin.shell: gnome-extensions disable {{ gnome_extension_info.uuid }}
+  changed_when: true
+  failed_when: false
+  when: r_gnome_extensions_check_existing.stat.exists
+
+- name: "Remove Gnome Shell extension directory - {{ gnome_extension_info.name }}"
+  ansible.builtin.file:
+    path: "{{ ansible_facts['user_dir'] }}/.local/share/gnome-shell/extensions/{{ gnome_extension_info.uuid }}"
+    state: absent
+  when: r_gnome_extensions_check_existing.stat.exists

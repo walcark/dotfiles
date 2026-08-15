@@ -1,0 +1,4 @@
+# Inverse of gaming/tasks/main.yml, one import per task unit, reverse order.
+- import_tasks: absent_discord.yml
+- import_tasks: absent_lutris.yml
+- import_tasks: absent_steam.yml

@@ -1,0 +1,2 @@
+# Inverse of drawing/tasks/main.yml.
+- import_tasks: absent_krita.yml

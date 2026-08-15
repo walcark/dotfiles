@@ -1,0 +1,11 @@
+# Machine-readable manifest for the Converge UI (see ansible/roles/README.md).
+name: Desktop
+description: Kitty terminal themes
+profiles: [client]
+requires: [core]
+tasks:
+  - id: kitty
+    kind: git
+    description: kovidgoyal and dexpota kitty theme repos
+    provides: [kitty-themes-kovidgoyal, kitty-themes-dexpota]
+    reversible: derived

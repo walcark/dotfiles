@@ -1,0 +1,11 @@
+# Inverse of tasks/kitty.yml. Both theme repos are read-only clones of
+# public repos with no user commits — safe to remove outright.
+- name: Remove kovidgoyal kitty themes
+  ansible.builtin.file:
+    path: "{{ ansible_facts['user_dir'] }}/.config/kitty/themes/kovidgoyal-kitty-themes"
+    state: absent
+
+- name: Remove dexpota kitty themes
+  ansible.builtin.file:
+    path: "{{ ansible_facts['user_dir'] }}/.config/kitty/themes/dexpota-kitty-themes"
+    state: absent

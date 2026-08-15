@@ -1,0 +1,29 @@
+# Machine-readable manifest for the Converge UI (see ansible/roles/README.md).
+name: Dev
+description: Editor and language tooling — Neovim, Go, Python 3.11, Typst, TigerVNC
+profiles: [client, server]
+requires: [core]
+tasks:
+  - id: pixi
+    kind: pixi
+    # No local tasks/pixi.yml to mirror: installed via core's shared
+    # pixi.yml (include_role), uninstalled via core's shared absent_pixi.yml
+    # the same way — see ansible/roles/README.md.
+    description: dev pixi global tools
+    provides: [nvim, lazygit, go, "python=3.11", typst, tinymist, plantuml]
+    reversible: derived
+  - id: nvim
+    kind: custom
+    description: nvim-configs clone + the language stack it declares (pixi/npm/static)
+    provides: [] # dynamic — loaded at run time from the external nvim-configs repo, see tasks/nvim.yml
+    reversible: explicit # the nvim-configs clone itself is left in place, see tasks/absent_nvim.yml
+  - id: tiger_vnc
+    kind: flatpak
+    description: TigerVNC viewer
+    provides: [org.tigervnc.vncviewer]
+    reversible: derived
+  - id: golang
+    kind: custom
+    description: Go toolchain compile smoke test — no persistent state
+    provides: []
+    reversible: derived
