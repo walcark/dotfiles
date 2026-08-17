@@ -1,16 +1,28 @@
 - import_tasks: thunderbird.yml
 
+# check_mode: false — same reason as the uri task below: shell/command
+# tasks are skipped under check mode by default, which would leave
+# gnome_shell_version.stdout empty and drop shell_version from the API
+# query below, which in turn drops download_url from the response. Purely
+# a local read (changed_when: false already says as much).
 - name: Get Gnome shell version.
   ansible.builtin.shell: |
     set -o pipefail
     gnome-shell --version | sed 's/[^0-9.]*\([0-9.]*\).*/\1/'
   register: gnome_shell_version
   changed_when: false
+  check_mode: false
 
+# check_mode: false — found running Converge's own --check dry run: uri
+# doesn't support check mode, so this GET gets skipped entirely, results
+# end up without .json, and "Install extensions" below crashes resolving
+# gnome_extension_info.uuid. Pure read against a public API, nothing here
+# for check mode to protect against.
 - name: Get Gnome Shell extension info
   ansible.builtin.uri:
     url: "https://extensions.gnome.org/extension-info/?pk={{ item }}&shell_version={{ gnome_shell_version.stdout }}"
     return_content: yes
+  check_mode: false
   loop: "{{ gnome_extension_ids }}"
   register: r_gnome_extension_info
 

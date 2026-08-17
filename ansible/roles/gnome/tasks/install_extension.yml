@@ -9,8 +9,18 @@
     suffix: ".gnome_extension_download"
   register: r_gnome_extension_download_dir
   changed_when: false
-  when: not r_gnome_extensions_check_existing.stat.exists
+  when: not r_gnome_extensions_check_existing.stat.exists and not ansible_check_mode
 
+# The block below is real download+unarchive: get_url and unarchive each
+# support check mode fine on their own, but only if the files they're
+# diffing already exist — here dest is itself a directory this same run
+# only *predicts* creating a few tasks earlier, so unarchive has nothing
+# real to inspect and errors "must be an existing dir". Short of actually
+# performing the install (defeating the point of --check), there's no way
+# to compute a faithful diff for a not-yet-installed extension, so this
+# whole block is skipped in check mode and the task below stands in for
+# it, matching the "Command would have run if not in check mode" wording
+# used elsewhere in this repo for the same kind of unpredictable step.
 - name: Install Gnome Shell
   block:
     - name: Download Gnome Shell extension - {{ gnome_extension_info.name }}
@@ -41,4 +51,10 @@
         path: "{{ r_gnome_extension_download_dir.path }}"
         state: absent
       changed_when: false
-  when: not r_gnome_extensions_check_existing.stat.exists
+  when: not r_gnome_extensions_check_existing.stat.exists and not ansible_check_mode
+
+- name: "Install Gnome Shell extension - {{ gnome_extension_info.name }} (check mode)"
+  ansible.builtin.debug:
+    msg: "Command would have run if not in check mode"
+  changed_when: true
+  when: not r_gnome_extensions_check_existing.stat.exists and ansible_check_mode
