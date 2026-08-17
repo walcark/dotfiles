@@ -42,9 +42,6 @@
         src: "{{ r_gnome_extension_download.dest }}"
         dest: "{{ ansible_facts['user_dir'] }}/.local/share/gnome-shell/extensions/{{ gnome_extension_info.uuid }}"
         remote_src: yes
-
-    - name: Enable Gnome Shell extension - {{ gnome_extension_info.name }}
-      ansible.builtin.shell: gnome-extensions enable {{ gnome_extension_info.uuid }}
   always:
     - name: Delete temporary download directory
       ansible.builtin.file:
@@ -58,3 +55,45 @@
     msg: "Command would have run if not in check mode"
   changed_when: true
   when: not r_gnome_extensions_check_existing.stat.exists and ansible_check_mode
+
+# Deliberately outside the block above and its "not stat.exists" guard:
+# on Wayland (the default here) GNOME Shell only scans the extensions
+# directory at session start — there's no live-reload equivalent of X11's
+# "Alt+F2, r" — so a UUID unpacked to disk this same run is invisible to
+# `gnome-extensions` until the next login, and enabling it here fails.
+# Gating this on "just unpacked" would mean it's never retried once
+# stat.exists is true; checking current state unconditionally instead
+# means every apply keeps trying until a session restart lets it
+# succeed. Not fatal either way — letting it abort the whole play would
+# block every task after it (other extensions, gaming, dev, ...) for
+# something outside ansible's control.
+#
+# `gnome-extensions enable` exits 0 whether or not it was already
+# enabled, so changed_when needs a real before/after comparison —
+# without it this would report "changed" on every single apply, forever.
+- name: Check which Gnome Shell extensions are currently enabled
+  ansible.builtin.command: gnome-extensions list --enabled
+  register: r_gnome_extensions_enabled_list
+  changed_when: false
+  failed_when: false
+  when: not ansible_check_mode
+
+- name: Enable Gnome Shell extension - {{ gnome_extension_info.name }}
+  ansible.builtin.shell: gnome-extensions enable {{ gnome_extension_info.uuid }}
+  register: r_gnome_extension_enable
+  changed_when: r_gnome_extension_enable.rc == 0
+  failed_when: false
+  when: >-
+    not ansible_check_mode and
+    gnome_extension_info.uuid not in (r_gnome_extensions_enabled_list.stdout_lines | default([]))
+
+- name: "Note - {{ gnome_extension_info.name }} needs a session restart to activate"
+  ansible.builtin.debug:
+    msg: >-
+      {{ gnome_extension_info.name }} is unpacked but GNOME Shell hasn't
+      picked it up yet — log out and back in (Wayland doesn't support a
+      live extensions rescan), then it'll show as enabled on the next run.
+  when: >-
+    not ansible_check_mode and
+    gnome_extension_info.uuid not in (r_gnome_extensions_enabled_list.stdout_lines | default([])) and
+    r_gnome_extension_enable.rc | default(1) != 0
