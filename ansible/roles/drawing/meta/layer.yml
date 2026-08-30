@@ -1,11 +1,20 @@
 # Machine-readable manifest for the Converge UI (see ansible/roles/README.md).
 name: Drawing
 description: Krita, kept at latest
-profiles: [client]
-requires: [core]
+profiles:
+    - client
+requires:
+    - core
 tasks:
-  - id: krita
-    kind: flatpak
-    description: Krita, kept at latest
-    provides: [org.kde.krita]
-    reversible: derived
+    - id: krita
+      kind: flatpak
+      description: Krita, kept at latest
+      provides:
+        - org.kde.krita
+      reversible: derived
+    - id: gimp
+      kind: flatpak
+      description: GIMP, kept at latest
+      provides:
+        - org.gimp.GIMP
+      reversible: explicit

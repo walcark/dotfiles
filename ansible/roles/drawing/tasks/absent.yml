@@ -2,3 +2,5 @@
 # core/tasks/absent.yml's header comment.
 - import_tasks: absent_krita.yml
   when: "'krita' not in (absent_skip | default([]))"
+- import_tasks: absent_gimp.yml
+  when: "'gimp' not in (absent_skip | default([]))"
