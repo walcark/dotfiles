@@ -54,8 +54,3 @@
         tasks_from: absent
       when: "'dev' in (absent_layers | default([]))"
 
-    - name: Uninstall drawing
-      ansible.builtin.include_role:
-        name: drawing
-        tasks_from: absent
-      when: "'drawing' in (absent_layers | default([]))"
